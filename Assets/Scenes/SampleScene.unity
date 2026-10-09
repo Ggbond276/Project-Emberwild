@@ -151,6 +151,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2bc11bf9116099419bfb7d27641bed5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _enableTestKeys: 1
+  _hitDirection: {x: 0, y: 0, z: 1}
+  _damageSmallKey: 116
+  _damageBigKey: 121
+  _fatalDamageKey: 117
+  _resetKey: 114
 --- !u!4 &61115797
 Transform:
   m_ObjectHideFlags: 0
@@ -390,13 +396,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.17364816, y: 0, z: 0, w: 0.9848078}
-  m_LocalPosition: {x: 2.5, y: 3.14, z: -0.53}
+  m_LocalRotation: {x: 0.32480085, y: 0.05342762, z: -0.018380957, w: 0.9440932}
+  m_LocalPosition: {x: 2.639004, y: 4.283365, z: 0.6942616}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 37.97, y: 6.478, z: 0}
 --- !u!114 &963194229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -546,7 +552,22 @@ MonoBehaviour:
   - 25
   _attackTrigger: Attack
   _attackIndexParameter: ComboIndex
-  _comboWindow: 0.6
+  _comboWindow: 1.5
+--- !u!114 &3338917582495526372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2674548244704655192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e2becc884510024e943a47f1fd657ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animator: {fileID: 3016442688314835835}
+  _getHitTrigger: GetHit
+  _dieTrigger: Die
 --- !u!1001 &6359333614210967811
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -555,6 +576,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1224478986782134470, guid: 6b31060afeca9a8448a53c873908428a, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: dfd0526afd594734bae6d4e828fb7aa8, type: 2}
     - target: {fileID: 2528060505465474028, guid: 6b31060afeca9a8448a53c873908428a, type: 3}
       propertyPath: _inputReader
       value: 
@@ -614,6 +639,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8223578337692767180, guid: 6b31060afeca9a8448a53c873908428a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3338917582495526371}
+    - targetCorrespondingSourceObject: {fileID: 8223578337692767180, guid: 6b31060afeca9a8448a53c873908428a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3338917582495526372}
   m_SourcePrefab: {fileID: 100100000, guid: 6b31060afeca9a8448a53c873908428a, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
