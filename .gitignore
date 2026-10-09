@@ -113,3 +113,12 @@ InitTestScene*.unity*
 
 # Cursor IDE
 .cursor/
+
+
+# ===== 付费美术资产(从 UnityPackage 导入,不提交公开)=====
+/Assets/Art/UnityPackage/
+/Assets/Art/UnityPackage.meta
+/Assets/Art/Animators/
+/Assets/Art/Animators.meta
+/Assets/Resources/Prefabs/Characters/
+/Assets/Resources/Prefabs/Characters.meta
