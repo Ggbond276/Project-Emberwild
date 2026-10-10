@@ -59,6 +59,10 @@ namespace Emberwild.Character
         [Tooltip("角色移动速度(米/秒)")]
         [SerializeField] private float _moveSpeed = 5f;
 
+        [Header("物理")]
+        [Tooltip("角色物理驱动层 CharacterLocomotionMotor(挂在自身根节点)")]
+        [SerializeField] private CharacterLocomotionMotor _motor;
+
         // 缓存 OnMove 回调值,Update 中读取。
         private Vector2 _moveInput;
 
@@ -93,6 +97,13 @@ namespace Emberwild.Character
             else
             {
                 _speedHash = Animator.StringToHash(_speedParameter);
+            }
+
+            if (_motor == null)
+            {
+                AppLog.Error("Player", "CharacterMovementController: Motor is null, please assign in Inspector");
+                enabled = false;
+                return;
             }
 
             _inputReader.OnMove += HandleMove;
@@ -154,7 +165,9 @@ namespace Emberwild.Character
                 {
                     _isAttacking = false;
                 }
-                // 攻击期间不调用 transform 移动 / 转向
+
+                // 移动涉及两个方面 1.动画 2.速度
+                // 这两个需要在攻击硬直状态下锁死
                 if (_animator != null && _speedHash != 0)
                 {
                     _animator.SetFloat(_speedHash, 0f);
@@ -162,8 +175,9 @@ namespace Emberwild.Character
                 return;
             }
 
-
+            // 拿到手柄的二维坐标输入 比如(1,1)
             var input = _moveInput;
+            // 计算出推力
             var magnitude = input.magnitude;
 
             // 喂 Animator Locomotion 参数(只要 Animator 存在就每帧喂,即使静止也写 0)。
@@ -174,31 +188,49 @@ namespace Emberwild.Character
             }
 
             // 静止:不移动、不朝向。
-            if (magnitude < 0.0001f) return;
+            if (magnitude < 0.0001f)
+            {
+                if (_motor != null) _motor.DesiredHorizontalVelocity = Vector3.zero;
+                return;
+            }
 
-            // 摄像机 forward / right 投影到 XZ 平面,避免俯仰影响移动方向。
-            var camForward = _cameraController.transform.forward;
-            camForward.y = 0f;
-            if (camForward.sqrMagnitude < 0.0001f) return; // 摄像机垂直朝上/下时退化
-            camForward.Normalize();
+            // --- 阶段一：读取摄像机视角（纯获取数据，不改变摄像机） ---
+            var camForward = _cameraController.transform.forward; // 获取摄像机面对的正前方
+            camForward.y = 0f;  // 强行拍平到水平地面（y=0），防止主角飞天遁地
+            if (camForward.sqrMagnitude < 0.0001f) // 防错拦截：若摄像机垂直朝下导致向量归零，则退出本帧
+            {
+                if (_motor != null) _motor.DesiredHorizontalVelocity = Vector3.zero;
+                return;
+            }
+            camForward.Normalize();  // 标准化：将“前方箭头”的长度拉伸为标准的 1
 
-            var camRight = _cameraController.transform.right;
-            camRight.y = 0f;
-            camRight.Normalize();
+            var camRight = _cameraController.transform.right; // 获取摄像机的正右方
+            camRight.y = 0f; // 同样强行拍平到水平地面
+            camRight.Normalize(); // 标准化：将“右方箭头”的长度拉伸为标准的 1
 
-            // 相机相对移动方向。
-            // input.x = 左右(+ 向相机视角的右), input.y = 前后(+ 向相机视角的前)。
-            var moveDir = camRight * input.x + camForward * input.y;
-            if (moveDir.sqrMagnitude < 0.0001f) return;
 
-            moveDir.Normalize();
+            // --- 阶段二：计算三维移动方向（纯数学运算，主角还没动） ---
+            var moveDir = camRight * input.x + camForward * input.y; // 核心转换：摇杆X轴乘右箭头，摇杆Y轴乘前箭头，叠加出最终 3D 方向
+            if (moveDir.sqrMagnitude < 0.0001f) // 防错拦截：如果计算出的推力极小，视为静止，退出本帧
+            {
+                if (_motor != null) _motor.DesiredHorizontalVelocity = Vector3.zero;
+                return;
+            }
+            moveDir.Normalize(); // 防斜向加速：强制把最终箭头的长度限制为 1
 
-            // 位移。
-            transform.position += moveDir * _moveSpeed * Time.deltaTime;
+
+            // --- 阶段三：调整主角实体（真正的物理表现，只改变主角本身） ---
+            // 位移:写入 Motor 的期望水平速度,由 Motor 在 FixedUpdate 合并到 Rigidbody。
+            // 静止时写零向量,Motor 会把 Rigidbody.xz 速度归零,角色立即停下。
+            if (_motor != null)
+            {
+                _motor.DesiredHorizontalVelocity = moveDir * _moveSpeed;
+            }
 
             // 朝向:角色面朝移动方向。
             // 静止时不再调用,保留上一次的朝向,避免回中时 LookRotation(zero) 报警。
             transform.rotation = Quaternion.LookRotation(moveDir, Vector3.up);
+            transform.rotation = Quaternion.LookRotation(moveDir, Vector3.up); // 调整主角转身：强制主角的正脸，精准对准该移动方向
         }
     }
 }

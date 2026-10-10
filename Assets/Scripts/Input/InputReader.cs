@@ -44,9 +44,20 @@ namespace Emberwild.Input
         /// </summary>
         public event Action OnDodge;
 
+        /// <summary>
+        /// 跳跃事件(按下瞬间触发一次)
+        /// </summary>
+        public event Action OnJump;
 
-
+        /// <summary>
+        /// 输入动作实例
+        /// </summary>
         private PlayerInputActions _actions;
+
+        /// <summary>
+        /// 当前移动输入值(由外部按需读取,如 CharacterLocomotionMotor 落地后才读)
+        /// </summary>
+        public Vector2 CurrentMove => _actions.Player.Move.ReadValue<Vector2>();
 
 
         private void Awake()
@@ -60,12 +71,14 @@ namespace Emberwild.Input
             _actions.Player.Enable();
             _actions.Player.Attack.started += HandleAttack;
             _actions.Player.Dodge.started += HandleDodge;
+            _actions.Player.Jump.started += HandleJump;
         }
 
         private void OnDisable()
         {
             _actions.Player.Attack.started -= HandleAttack;
             _actions.Player.Dodge.started -= HandleDodge;
+            _actions.Player.Jump.started -= HandleJump;
             _actions.Player.Disable();
         }
 
@@ -75,16 +88,12 @@ namespace Emberwild.Input
         }
 
 
-        /// <summary>
-        /// 抛出事件给订阅OnAttack的处理
-        /// </summary>
-        /// <param name="_"></param>
+
         private void HandleAttack(InputAction.CallbackContext _) => OnAttack?.Invoke();
-        /// <summary>
-        /// 抛出事件给订阅OnDodge的处理
-        /// </summary>
-        /// <param name="_"></param>
         private void HandleDodge(InputAction.CallbackContext _) => OnDodge?.Invoke();
+        private void HandleJump(InputAction.CallbackContext _) => OnJump?.Invoke();
+
+        
 
         private void Update()
         {
