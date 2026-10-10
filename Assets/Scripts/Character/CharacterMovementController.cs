@@ -168,7 +168,8 @@ namespace Emberwild.Character
 
                 // 移动涉及两个方面 1.动画 2.速度
                 // 这两个需要在攻击硬直状态下锁死
-                if (_animator != null && _speedHash != 0)
+                // 仅地面写 Speed:空中让 Jump 状态机全权控制,避免 Locomotion 覆盖 JumpAir。
+                if (_animator != null && _speedHash != 0 && _motor != null && _motor.IsGrounded)
                 {
                     _animator.SetFloat(_speedHash, 0f);
                 }
@@ -182,7 +183,8 @@ namespace Emberwild.Character
 
             // 喂 Animator Locomotion 参数(只要 Animator 存在就每帧喂,即使静止也写 0)。
             // Animator 对不存在的参数名静默忽略,所以参数还没建也不会报错。
-            if (_animator != null && _speedHash != 0)
+            // 仅地面写 Speed:空中由跳跃状态机控制 JumpAir/JumpAir_Spin,不能被 Locomotion 拽回。
+            if (_animator != null && _speedHash != 0 && _motor != null && _motor.IsGrounded)
             {
                 _animator.SetFloat(_speedHash, magnitude);
             }
