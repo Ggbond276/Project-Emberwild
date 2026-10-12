@@ -6,9 +6,9 @@ namespace Emberwild.Core.Events
     /// <summary>
     /// 进程内事件总线(静态)。
     /// 用法:
-    ///   EventBus.Subscribe<PlayerAttackedEvent>(OnAttacked);
-    ///   EventBus.Publish(new PlayerAttackedEvent(...));
-    ///   EventBus.Unsubscribe<PlayerAttackedEvent>(OnAttacked);
+    ///   EventBus.Subscribe<CharacterAttackHitEvent>(OnAttacked);
+    ///   EventBus.Publish(new CharacterAttackHitEvent(...));
+    ///   EventBus.Unsubscribe<CharacterAttackHitEvent>(OnAttacked);
     /// 事件 struct 必须实现 IEvent。
     /// 线程不安全,仅在主线程使用。
     /// </summary>

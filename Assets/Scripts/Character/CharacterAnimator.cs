@@ -109,7 +109,7 @@ namespace Emberwild.Character
         public void PlayAttack(int comboIndex)
         {
             if (_animator == null) return;
-            // 顺序保留原 PlayerCombat:先设参数,再重置,再触发,避免连招错段。
+            // 顺序保留原 PlayerCombat(现 CharacterCombat):先设参数,再重置,再触发,避免连招错段。
             _animator.SetInteger(_comboIndexHash, comboIndex);
             _animator.ResetTrigger(_attackHash);
             _animator.SetTrigger(_attackHash);

@@ -2,7 +2,6 @@ using UnityEngine;
 using Emberwild.CameraControl;
 using Emberwild.Core.AppLog;
 using Emberwild.Input;
-using Emberwild.Core.Events;
 
 namespace Emberwild.Character
 {
@@ -12,33 +11,21 @@ namespace Emberwild.Character
     /// 职责:
     /// - 订阅 <see cref="InputReader.OnMove"/>,获得 LS 二维向量。
     /// - 从 <see cref="CameraController"/>.transform 拿 forward / right,投影到 XZ 平面。
-    /// - 算相机相对移动方向,以 <see cref="_moveSpeed"/> 修改 transform.position。
+    /// - 算相机相对移动方向,写入 <see cref="CharacterLocomotionMotor.DesiredHorizontalVelocity"/>。
     /// - 让 transform.forward 始终朝向移动方向(静止时保留当前朝向)。
     /// - 把 <c>_moveInput.magnitude</c>(0~1) 喂给 CharacterAnimator,驱动 Locomotion Blend Tree。
+    /// - 读 CharacterStateController.CanMove 决定是否锁定移动。
     ///
     /// 严格不做:
     /// - 不广播 EventBus。
     /// - 不做碰撞检测 / 物理 / 地面检测 / 重力。
     /// - 不引入 Rigidbody / CharacterController。
     /// - 不处理 Sprint / Crouch / Jump / Attack 等其他动画参数。
+    /// - 不持有 CharacterCombat / CharacterJumpController 引用。
     /// </summary>
     [DisallowMultipleComponent]
     public class CharacterMovementController : MonoBehaviour
     {
-
-
-        [Header("攻击")]
-        [Tooltip("每段伤害(段位 0~3)")]
-        [SerializeField] private float[] _attackDamages = { 10f, 12f, 15f, 20f };
-
-        [Tooltip("每段攻击动画时长(秒);命中帧 = 时长/2")]
-        [SerializeField] private float _attackDuration = 0.5f;
-
-        [Tooltip("段间衔接窗口(秒)")]
-        [SerializeField] private float _comboWindow = 0.4f;
-
-
-
         [Header("输入")]
         [Tooltip("场景中的 InputReader(挂在 InputManager GameObject 上)")]
         [SerializeField] private InputReader _inputReader;
@@ -51,6 +38,10 @@ namespace Emberwild.Character
         [Tooltip("角色动画播放层(挂在角色 GameObject 上)")]
         [SerializeField] private CharacterAnimator _animator;
 
+        [Header("状态")]
+        [Tooltip("角色状态协调器(用于读 CanMove 决定是否锁移动)")]
+        [SerializeField] private CharacterStateController _state;
+
         [Header("移动")]
         [Tooltip("角色移动速度(米/秒)")]
         [SerializeField] private float _moveSpeed = 5f;
@@ -61,11 +52,6 @@ namespace Emberwild.Character
 
         // 缓存 OnMove 回调值,Update 中读取。
         private Vector2 _moveInput;
-
-        private bool _isAttacking;
-        private int _comboIndex;
-        private float _attackEndTime;   // 当前攻击结束时间(Time.time)
-        private float _comboDeadline;   // 衔接窗口截止时间
 
         private void Start()
         {
@@ -96,8 +82,6 @@ namespace Emberwild.Character
             }
 
             _inputReader.OnMove += HandleMove;
-            _inputReader.OnAttack += HandleAttack;
-            AppLog.Info("Player", "Attack subscribed");
             AppLog.Info("Player", "CharacterMovementController initialized");
         }
 
@@ -106,9 +90,7 @@ namespace Emberwild.Character
             if (_inputReader != null)
             {
                 _inputReader.OnMove -= HandleMove;
-                _inputReader.OnAttack -= HandleAttack;
             }
-
         }
 
         private void HandleMove(Vector2 move)
@@ -116,56 +98,12 @@ namespace Emberwild.Character
             _moveInput = move;
         }
 
-        private void HandleAttack()
-        {
-            // 衔接窗口外:从段 0 开始
-            // 衔接窗口内:连段(0→1→2→3,满 4 回 0)
-            if (Time.time > _comboDeadline || _comboIndex >= 3)
-            {
-                _comboIndex = 0;
-            }
-            else
-            {
-                _comboIndex++;
-            }
-
-            _isAttacking = true;
-            _attackEndTime = Time.time + _attackDuration;
-            _comboDeadline = _attackEndTime + _comboWindow;
-
-            float damage = _attackDamages[Mathf.Clamp(_comboIndex, 0, _attackDamages.Length - 1)];
-
-            // 命中帧 = 动画中点
-            var hitPoint = transform.position + transform.forward * 1.2f;
-            var hitDir = transform.forward;
-
-            EventBus.Publish(new PlayerAttackedEvent(_comboIndex, hitPoint, hitDir, damage));
-
-            AppLog.Info("Player", $"Attack combo={_comboIndex} damage={damage}");
-        }
-
         private void Update()
         {
-            // 攻击中:跳过移动与朝向
-            if (_isAttacking)
+            // 状态机锁定时:停止移动与朝向,但不缓存(下一帧自然恢复)。
+            if (_state != null && !_state.CanMove)
             {
-                if (Time.time >= _attackEndTime)
-                {
-                    _isAttacking = false;
-                }
-
-                // 移动涉及两个方面 1.动画 2.物理速度
-                // 这两个需要在攻击硬直状态下锁死
-                if (_animator != null && _motor != null && _motor.IsGrounded)
-                {
-                    _animator.SetMoveSpeed(0f);
-                }
-
-                // 【修复Bug 1】：必须强制把物理信箱清零！否则角色在攻击时会继续按照上一帧的速度溜冰。
-                if (_motor != null)
-                {
-                    _motor.DesiredHorizontalVelocity = Vector3.zero;
-                }
+                LockMovementOutput();
                 return;
             }
 
@@ -220,8 +158,25 @@ namespace Emberwild.Character
                 _motor.DesiredHorizontalVelocity = moveDir * _moveSpeed;
             }
 
-            // 【修复Bug 2】：删掉了重复行。强制主角的正脸对准移动方向
+            // 强制主角的正脸对准移动方向
             transform.rotation = Quaternion.LookRotation(moveDir, Vector3.up);
+        }
+
+        /// <summary>
+        /// 锁定移动输出:清零 Animator Speed 与物理信箱速度,角色原地停留。
+        /// </summary>
+        private void LockMovementOutput()
+        {
+            // 攻击硬直时:清 Animator Speed(仅在地面避免污染空中 JumpAir)。
+            if (_animator != null && _motor != null && _motor.IsGrounded)
+            {
+                _animator.SetMoveSpeed(0f);
+            }
+            // 强制把物理信箱清零！否则角色在攻击时会继续按照上一帧的速度溜冰。
+            if (_motor != null)
+            {
+                _motor.DesiredHorizontalVelocity = Vector3.zero;
+            }
         }
     }
 }

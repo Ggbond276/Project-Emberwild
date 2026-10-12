@@ -3,12 +3,12 @@ using UnityEngine;
 namespace Emberwild.Core.Events
 {
     /// <summary>
-    /// 玩家完成一次攻击动作时发布(动画 Attack State 退出/命中帧触发)。
-    /// 订阅方:伤害系统(判定命中目标)、音效系统、特效系统。
+    /// 角色攻击命中事件 — 伤害判定系统接收。
+    /// 订阅方:伤害判定、特效、音效。
     /// </summary>
-    public readonly struct PlayerAttackedEvent : IEvent
+    public readonly struct CharacterAttackHitEvent : IEvent
     {
-        /// <summary>攻击段位(0~3,对应 Attack01~04)。</summary>
+        /// <summary>攻击段位(0~3)。</summary>
         public readonly int ComboIndex;
         /// <summary>命中框中心(世界坐标)。</summary>
         public readonly Vector3 HitPoint;
@@ -17,7 +17,7 @@ namespace Emberwild.Core.Events
         /// <summary>伤害值。</summary>
         public readonly float Damage;
 
-        public PlayerAttackedEvent(int comboIndex, Vector3 hitPoint, Vector3 hitDirection, float damage)
+        public CharacterAttackHitEvent(int comboIndex, Vector3 hitPoint, Vector3 hitDirection, float damage)
         {
             ComboIndex = comboIndex;
             HitPoint = hitPoint;

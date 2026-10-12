@@ -24,6 +24,10 @@ namespace Emberwild.Character
         [Tooltip("角色动画播放层(挂在角色 GameObject 上)")]
         [SerializeField] private CharacterAnimator _animator;
 
+        [Header("状态")]
+        [Tooltip("角色状态协调器(用于读 CanJump 决定是否锁跳跃)")]
+        [SerializeField] private CharacterStateController _state;
+
         [Header("跳跃参数")]
         [Tooltip("一段跳高度(米)")]
         [SerializeField] private float _jumpHeight = 2f;
@@ -73,6 +77,7 @@ namespace Emberwild.Character
 
         private void HandleJump()
         {
+            if (_state != null && !_state.CanJump) return;
             if (_motor == null) return;
             if (_motor.IsGrounded)
             {

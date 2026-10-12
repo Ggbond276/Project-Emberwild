@@ -64,12 +64,12 @@ namespace Emberwild.Data
             if (_characterData.CurrentHp <= 0f)
             {
                 _characterData.IsDead = true;
-                EventBus.Publish(new PlayerDiedEvent());
-                AppLog.Info(LOG_TAG, $"Player died (damage={damage:F1})");
+                EventBus.Publish(new CharacterDiedEvent());
+                AppLog.Info(LOG_TAG, $"Character died (damage={damage:F1})");
             }
             else
             {
-                EventBus.Publish(new PlayerDamagedEvent(damage, _characterData.CurrentHp, fromDirection));
+                EventBus.Publish(new CharacterDamagedEvent(damage, _characterData.CurrentHp, fromDirection));
                 AppLog.Info(LOG_TAG, $"Damaged -{damage:F1} HP={_characterData.CurrentHp:F1}/{_characterData.MaxHp:F1}");
             }
         }
@@ -81,7 +81,7 @@ namespace Emberwild.Data
         {
             if (!_initialized) Initialize();
             _characterData.ResetToFull();
-            EventBus.Publish(new PlayerHealthResetEvent());
+            EventBus.Publish(new CharacterHealthResetEvent());
             AppLog.Info(LOG_TAG, $"Health reset: {_characterData.CurrentHp}/{_characterData.MaxHp}");
         }
 
