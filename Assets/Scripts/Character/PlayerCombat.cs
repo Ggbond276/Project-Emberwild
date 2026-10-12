@@ -15,7 +15,7 @@ namespace Emberwild.Character
     ///
     /// 职责:
     /// - 维护 _comboIndex / _comboWindow,听 InputReader.AttackTriggered 触发连段。
-    /// - 驱动 Animator(ComboIndex + Attack Trigger)。
+    /// - 调用 CharacterAnimator.PlayAttack 播放连段动画。
     /// - 发送 PlayerAttackedEvent。
     /// - 提供 InterruptCombo() 给受击系统调用。
     ///
@@ -27,14 +27,9 @@ namespace Emberwild.Character
     public class PlayerCombat : MonoBehaviour
     {
         [SerializeField] private InputReader _inputReader;
-        [SerializeField] private Animator _animator;
+        [SerializeField] private CharacterAnimator _animator;
 
-        // TODO：以后需要抽离到配置表中
         [SerializeField] private float[] _attackDamages = { 10f, 12f, 15f, 20f, 25f };
-
-        [SerializeField] private string _attackTrigger = "Attack";
-
-        [SerializeField] private string _attackIndexParameter = "ComboIndex";
 
         [Tooltip("连段衔接窗口(秒)")]
         [SerializeField] private float _comboWindow = 0.6f;
@@ -49,13 +44,6 @@ namespace Emberwild.Character
 
         public int ComboIndex => _comboIndex;
         public bool IsAttacking => _isAttacking;
-
-
-        private void Start()
-        {
-            _attackTriggerHash = Animator.StringToHash(_attackTrigger);
-            _attackIndexHash = Animator.StringToHash(_attackIndexParameter);
-        }
 
 
         private void OnEnable()
@@ -84,12 +72,7 @@ namespace Emberwild.Character
 
             if (_animator != null)
             {
-                // 1.设置参数
-                _animator.SetInteger(_attackIndexHash, _comboIndex);
-                // 2.重置
-                _animator.ResetTrigger(_attackTriggerHash);
-                // 3.触发
-                _animator.SetTrigger(_attackTriggerHash);
+                _animator.PlayAttack(_comboIndex);
             }
 
             EventBus.Publish(new PlayerAttackedEvent(_comboIndex, attackPoint, transform.forward, damage));
@@ -111,7 +94,7 @@ namespace Emberwild.Character
                 _comboIndex = 0;
                 if(_animator != null)
                 {
-                    _animator.ResetTrigger(_attackTriggerHash); 
+                    _animator.ResetAttack();
                 }
 
                 AppLog.Info("Combat", "Combo interrupted");
