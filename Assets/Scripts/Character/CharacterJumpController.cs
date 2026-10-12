@@ -100,6 +100,8 @@ namespace Emberwild.Character
             // TODO:二段跳 — 暂不启用,手感调试结果不理想,后续再开放
             // 清理残留的 DoubleJump Trigger,避免落地后下一帧被动画机误消费。
             // if (_animator != null) _animator.ResetDoubleJump();
+            // 清理残留的 Jump Trigger,避免落地瞬间 JumpAir 状态误切回 Locomotion。
+            if (_animator != null) _animator.ResetJump();
         }
 
 

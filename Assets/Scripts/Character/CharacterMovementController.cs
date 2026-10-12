@@ -173,9 +173,15 @@ namespace Emberwild.Character
             var input = _moveInput;
             var magnitude = input.magnitude;
 
+            // 1. 有动画播放器 2.有物理控制器 3.玩家在地面上
             if (_animator != null && _motor != null && _motor.IsGrounded)
             {
                 _animator.SetMoveSpeed(magnitude);
+            }
+            // 空中:显式清零 Speed,防止上一帧残留值在落地前干扰 JumpAir 状态的 Exit 判断。
+            else if (_animator != null)
+            {
+                _animator.SetMoveSpeed(0f);
             }
 
             // 静止:不移动、不朝向。

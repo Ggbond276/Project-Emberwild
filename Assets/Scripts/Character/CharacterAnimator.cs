@@ -96,6 +96,13 @@ namespace Emberwild.Character
             _animator.ResetTrigger(_doubleJumpHash);
         }
 
+        /// <summary>清理残留的跳跃 Trigger(落地时调用,避免落地瞬间被状态机误消费导致走路动画覆盖跳跃动画)。</summary>
+        public void ResetJump()
+        {
+            if (_animator == null) return;
+            _animator.ResetTrigger(_jumpHash);
+        }
+
         // ---------- 攻击 ----------
 
         /// <summary>播放指定段位的攻击动画。</summary>
