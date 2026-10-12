@@ -1,3 +1,4 @@
+using Emberwild.Define;
 using UnityEngine;
 
 namespace Emberwild.Character
@@ -12,27 +13,38 @@ namespace Emberwild.Character
     [System.Serializable]
     public class CharacterData
     {
-        [Header("血量")]
-        [Tooltip("最大生命值")]
-        public float MaxHp = 100f;
+        public int TID; // 关联配置表的唯一ID
 
-        [Tooltip("当前生命值")]
-        public float CurrentHp = 100f;
+        [Header("血量")]
+        public float MaxHp;
+        public float CurrentHp;
+
+        [Header("战斗属性")]
+        public float AttackDamage;
+        public float Defense;
 
         [Header("运行时状态")]
-        [Tooltip("是否已死亡")]
         public bool IsDead = false;
-
-        // === 预留扩展字段(本 Stage 不启用) ===
-        [Tooltip("是否霸体(受伤不打断动作)")]
         public bool IsInvincible = false;
-
-        [Tooltip("是否处于无敌帧")]
         public bool IsInvulnerable = false;
 
         /// <summary>
-        /// 重置为满血状态(用于关卡重置/复活)
+        /// 核心：从配置表注入静态数据，并初始化动态状态
         /// </summary>
+        public void InitFromDefine(CharacterDefine define)
+        {
+            this.TID = define.TID;
+
+            // 数据桥接：将 Define 表里的数值赋给运行时数据
+            this.MaxHp = define.HP;
+            this.AttackDamage = define.AD;
+            this.Defense = define.DEF;
+
+            // 状态初始化
+            this.CurrentHp = this.MaxHp; // 满血出生
+            this.IsDead = false;
+        }
+
         public void ResetToFull()
         {
             CurrentHp = MaxHp;

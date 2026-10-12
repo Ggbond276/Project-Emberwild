@@ -30,7 +30,7 @@ namespace Emberwild.Character
 
         [Header("跳跃参数")]
         [Tooltip("一段跳高度(米)")]
-        [SerializeField] private float _jumpHeight = 2f;
+        [SerializeField] private float _jumpHeight = 1.5f;
 
         // TODO:二段跳 — 暂不启用,手感调试结果不理想,后续再开放
         [Tooltip("二段跳高度(米) — TODO:暂不启用")]

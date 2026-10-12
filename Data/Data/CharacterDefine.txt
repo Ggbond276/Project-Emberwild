@@ -1,0 +1,29 @@
+{
+  "17": {
+    "TID": 17,
+    "Name": "MC17",
+    "Type": "Character",
+    "Resource": "Prefabs/Characters/MC17",
+    "HP": 100.0,
+    "AD": 10.0,
+    "DEF": 10.0
+  },
+  "19": {
+    "TID": 19,
+    "Name": "MC19",
+    "Type": "Character",
+    "Resource": "Prefabs/Characters/MC19",
+    "HP": 100.0,
+    "AD": 10.0,
+    "DEF": 10.0
+  },
+  "1001": {
+    "TID": 1001,
+    "Name": "CapsuleEnemy",
+    "Type": "Monster",
+    "Resource": "Prefabs/Monsters/CapsuleEnemy",
+    "HP": 100.0,
+    "AD": 10.0,
+    "DEF": 10.0
+  }
+}

@@ -32,7 +32,7 @@ namespace Emberwild.Character
 
         [Header("摄像机")]
         [Tooltip("Main Camera 上的 CameraController(用于取相机方向)")]
-        [SerializeField] private CameraController _cameraController;
+        [SerializeField] public CameraController cameraController;
 
         [Header("动画")]
         [Tooltip("角色动画播放层(挂在角色 GameObject 上)")]
@@ -62,7 +62,7 @@ namespace Emberwild.Character
                 return;
             }
 
-            if (_cameraController == null)
+            if (cameraController == null)
             {
                 AppLog.Error("Player", "CharacterMovementController: CameraController is null, please assign in Inspector");
                 enabled = false;
@@ -130,7 +130,7 @@ namespace Emberwild.Character
             }
 
             // --- 阶段一：读取摄像机视角 ---
-            var camForward = _cameraController.transform.forward;
+            var camForward = cameraController.transform.forward;
             camForward.y = 0f;
             if (camForward.sqrMagnitude < 0.0001f)
             {
@@ -139,7 +139,7 @@ namespace Emberwild.Character
             }
             camForward.Normalize();
 
-            var camRight = _cameraController.transform.right;
+            var camRight = cameraController.transform.right;
             camRight.y = 0f;
             camRight.Normalize();
 

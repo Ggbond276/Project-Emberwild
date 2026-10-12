@@ -56,28 +56,49 @@ namespace Emberwild.CameraControl
 
         private void Start()
         {
-            if (_target == null)
+            if (_target == null || _inputReader == null)
             {
-                AppLog.Error("Camera", "CameraController: target is null, please assign in Inspector");
-                enabled = false;
+                AppLog.Info("Camera", "等待 TestRunner 动态分配追踪目标与输入源...");
+                enabled = false; // 暂时休眠，避免 LateUpdate 报错
+            }
+            else
+            {
+                // 如果场景里已经手动拖好了，就直接初始化（兼容旧模式）
+                BindTarget(_target, _inputReader);
+            }
+        }
+
+
+        public void BindTarget(Transform newTarget, InputReader newInputReader)
+        {
+            // 1. 如果之前有绑定的输入源，先解绑，防止重复订阅泄漏
+            if (_inputReader != null)
+            {
+                _inputReader.OnLook -= HandleLook;
+            }
+
+            // 2. 接收新依赖
+            _target = newTarget;
+            _inputReader = newInputReader;
+
+            if (_target == null || _inputReader == null)
+            {
+                AppLog.Error("Camera", "动态绑定失败：传入的 Target 或 InputReader 为空！");
                 return;
             }
 
-            if (_inputReader == null)
-            {
-                AppLog.Error("Camera", "CameraController: InputReader is null, please assign in Inspector");
-                enabled = false;
-                return;
-            }
-
-            // 初始化 yaw/pitch 为当前摄像机与 target 的相对角度,避免推 RS 前就跳变。
+            // 3. 重新计算初始 yaw/pitch，避免推 RS 前视角跳变
             var dir = transform.position - _target.position;
             _yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg + 180f;
             _pitch = Mathf.Asin(dir.normalized.y) * Mathf.Rad2Deg;
             _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
 
+            // 4. 订阅新角色的输入事件
             _inputReader.OnLook += HandleLook;
-            AppLog.Info("Camera", "CameraController initialized");
+
+            // 5. 唤醒相机！
+            enabled = true;
+            AppLog.Info("Camera", $"CameraController 动态绑定成功！目标: {_target.name}");
         }
 
         private void OnDestroy()

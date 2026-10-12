@@ -122,3 +122,15 @@ InitTestScene*.unity*
 /Assets/Art/Animators.meta
 /Assets/Resources/Prefabs/Characters/
 /Assets/Resources/Prefabs/Characters.meta
+
+# ===== NuGet 包产物(运行时通过 Unity Package Manager 安装,不入库)=====
+/Packages/Newtonsoft.Json.13.0.4/
+# Newtonsoft.Json 包的 XML 文档(超大、无运行价值)
+/Packages/*.xml
+
+# ===== EPPlus / json-excel 工具的 XML 文档(超大、无运行价值)=====
+/Data/json-excel/EPPlus.xml
+/Data/json-excel/Newtonsoft.Json.xml
+
+# ===== Excel 源表原始文件(Excel 源在本地维护,产物 JSON 入库即可)=====
+/Data/Tables/*.xlsx
