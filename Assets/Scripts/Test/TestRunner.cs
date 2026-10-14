@@ -1,3 +1,4 @@
+using Emberwild.AI.Pathfinding;
 using Emberwild.CameraControl;
 using Emberwild.Character;
 using Emberwild.Combat;
@@ -14,28 +15,73 @@ namespace Emberwild.Core.Test
     public class TestRunner : MonoBehaviour
     {
 
-        // 1. 新增：用于缓存生成的玩家的动画机
+        [Header("寻路系统配置")]
+        [Tooltip("寻路网格的生成起点 (通常为地形左下角)")]
+        [SerializeField] private Vector3 _gridOrigin = Vector3.zero;
+        [Tooltip("寻路网格的覆盖尺寸 (X和Z宽跨度)")]
+        [SerializeField] private Vector2 _gridWorldSize = new Vector2(20, 20);
+        [Tooltip("单个寻路节点的检测半径")]
+        [SerializeField] private float _nodeRadius = 0.5f;
+        [Tooltip("障碍物图层，用于标记不可行走的区域")]
+        [SerializeField] private LayerMask _obstacleMask;
+
+        // 缓存生成的玩家对象及其组件
+        private GameObject _playerObj;
         private CharacterAnimator _characterAnimator;
 
         private void Start()
         {
-            Debug.Log("<color=yellow>启动核心模块</color>");
+            Debug.Log("<color=yellow>--- 游戏启动流水线 开始 ---</color>");
 
-            // 1. 静态数据管线
+            // 1. 初始化所有无状态的全局管理器 (数据表/存档/战斗)
+            InitGlobalManagers();
+
+            // 2. 初始化底层环境数据 (如 A* 寻路网格)
+            InitEnvironmentSystems();
+
+            // 3. 根据存档数据动态实例化玩家模型
+            CreatePlayerEntity();
+
+            // 4. 将玩家与外围系统(相机/输入)进行绑定
+            BindDependencies();
+
+            Debug.Log("<color=yellow>--- 游戏启动流水线 完毕 ---</color>");
+        }
+
+        /// <summary>
+        /// 模块 1：初始化全局数据与系统管线
+        /// </summary>
+        private void InitGlobalManagers()
+        {
+            Debug.Log("<color=yellow>[1/4] 初始化核心管理器...</color>");
+
             DataManager.Instance.Init();
             DataManager.Instance.Load();
 
-            // 2. 动态存档管线
             PlayerDataManager.Instance.Init();
             PlayerDataManager.Instance.LoadGame();
 
-            // 3. 战斗判定管线
             CombatDetector.Instance.Init();
+        }
 
+        /// <summary>
+        /// 模块 2：初始化环境系统（包括全局寻路网格）
+        /// </summary>
+        private void InitEnvironmentSystems()
+        {
+            Debug.Log("<color=yellow>[2/4] 初始化环境系统(寻路网格)...</color>");
 
-            Debug.Log("<color=yellow>构建玩家实体</color>");
+            // 调度我们刚刚重构剥离 MonoBehaviour 后的 GridManager
+            GridManager.Instance.Init(_gridOrigin, _gridWorldSize, _nodeRadius, _obstacleMask);
+        }
 
-            // 4. 提取当前存档，并根据存档中的 TID 去拿配置表
+        /// <summary>
+        /// 模块 3：读取存档并动态构建玩家实体
+        /// </summary>
+        private void CreatePlayerEntity()
+        {
+            Debug.Log("<color=yellow>[3/4] 构建玩家实体...</color>");
+
             CharacterData saveData = PlayerDataManager.Instance.CurrentSaveData;
             if (saveData == null)
             {
@@ -49,7 +95,6 @@ namespace Emberwild.Core.Test
                 return;
             }
 
-            // 5. 动态加载并生成角色预制体
             GameObject prefab = Resources.Load<GameObject>(define.Resource);
             if (prefab == null)
             {
@@ -57,45 +102,41 @@ namespace Emberwild.Core.Test
                 return;
             }
 
-            GameObject playerObj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
-            playerObj.name = define.Name;
+            _playerObj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            _playerObj.name = define.Name;
 
-            _characterAnimator = playerObj.GetComponent<CharacterAnimator>();
+            _characterAnimator = _playerObj.GetComponent<CharacterAnimator>();
 
-            CharacterEntity entity = playerObj.GetComponent<CharacterEntity>();
+            CharacterEntity entity = _playerObj.GetComponent<CharacterEntity>();
             if (entity != null)
             {
                 entity.Initialize(define, saveData);
             }
             else
             {
-                Debug.LogError($"配置错误：预制体 {playerObj.name} 上未挂载 CharacterEntity 组件！");
-                return;
+                Debug.LogError($"配置错误：预制体 {_playerObj.name} 上未挂载 CharacterEntity 组件！");
             }
-
-
-            Debug.Log("<color=yellow>建立系统依赖关联</color>");
-            BindDependencies(playerObj);
         }
 
         /// <summary>
-        /// 串联摄像机、输入系统与动作系统
+        /// 模块 4：串联摄像机、输入系统与动作系统
         /// </summary>
-        private void BindDependencies(GameObject playerObj)
+        private void BindDependencies()
         {
+            Debug.Log("<color=yellow>[4/4] 建立系统依赖关联...</color>");
+
+            if (_playerObj == null) return;
+
             CameraController camController = FindObjectOfType<CameraController>();
-            CharacterMovementController moveController = playerObj.GetComponent<CharacterMovementController>();
-            InputReader playerInput = playerObj.GetComponent<InputReader>();
+            CharacterMovementController moveController = _playerObj.GetComponent<CharacterMovementController>();
+            InputReader playerInput = _playerObj.GetComponent<InputReader>();
 
             if (camController != null && moveController != null && playerInput != null)
             {
-                // A. 移动系统 -> 摄像机
                 moveController.cameraController = camController;
+                camController.BindTarget(_playerObj.transform, playerInput);
 
-                // B. 摄像机系统 -> 认识玩家坐标与手柄输入
-                camController.BindTarget(playerObj.transform, playerInput);
-
-                Debug.Log($"<color=green>角色 [{playerObj.name}] 实例化与依赖绑定 测试战斗</color>");
+                Debug.Log($"<color=green>角色 [{_playerObj.name}] 实例化与依赖绑定完成！测试阶段就绪。</color>");
             }
             else
             {
