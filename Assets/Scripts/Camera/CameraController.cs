@@ -13,7 +13,7 @@ namespace Emberwild.CameraControl
     ///   yaw(水平)和 pitch(垂直,带 [_minPitch, _maxPitch] 限位)。
     /// - <c>LateUpdate</c> 中把摄像机放到 target 后的固定偏移位置并 LookAt target。
     ///
-    /// 严格不做:
+    /// 
     /// - 不移动 target(角色移动由 CharacterMovementController 负责)。
     /// - 不访问 Animator、不广播 EventBus。
     /// - 不做平滑 / 阻尼 / 镜头碰撞 / 震动 / 回中动画。

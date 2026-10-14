@@ -1,3 +1,4 @@
+using Emberwild.Character;
 using UnityEngine;
 
 namespace Emberwild.Core.Events
@@ -8,21 +9,19 @@ namespace Emberwild.Core.Events
     /// </summary>
     public readonly struct CharacterAttackHitEvent : IEvent
     {
-        /// <summary>攻击段位(0~3)。</summary>
-        public readonly int ComboIndex;
-        /// <summary>命中框中心(世界坐标)。</summary>
-        public readonly Vector3 HitPoint;
-        /// <summary>命中框朝向(单位向量)。</summary>
-        public readonly Vector3 HitDirection;
-        /// <summary>伤害值。</summary>
-        public readonly float Damage;
+        public readonly CharacterEntity Attacker;
 
-        public CharacterAttackHitEvent(int comboIndex, Vector3 hitPoint, Vector3 hitDirection, float damage)
+        public readonly int ComboIndex;
+
+        /// <summary>
+        /// 玩家攻击事件
+        /// </summary>
+        /// <param name="attacker">攻击者是谁</param>
+        /// <param name="comboIndex">是第几段攻击</param>
+       public CharacterAttackHitEvent(CharacterEntity attacker, int comboIndex)
         {
+            Attacker = attacker;
             ComboIndex = comboIndex;
-            HitPoint = hitPoint;
-            HitDirection = hitDirection;
-            Damage = damage;
         }
     }
 }

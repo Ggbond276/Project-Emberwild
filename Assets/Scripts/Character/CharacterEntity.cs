@@ -1,4 +1,5 @@
 ﻿using Emberwild.Character;
+using Emberwild.Combat;
 using Emberwild.Define;
 using System;
 using System.Collections.Generic;
@@ -9,17 +10,43 @@ using UnityEngine;
 
 namespace Emberwild.Character
 {
+    /// <summary>
+    /// 角色实体大管家 — 负责桥接 Define 与 Data，并向外部提供干净的数据访问接口。
+    /// </summary>
+    [RequireComponent(typeof(CombatAttribute))]
     public class CharacterEntity : MonoBehaviour
     {
-        // 序列化出来方便在 Inspector 里观察当前数值
-        [SerializeField]
-        public CharacterData RuntimeData = new CharacterData();
+        private CharacterDefine _define;
 
-        // 接收配置表并初始化
-        public void Initialize(CharacterDefine define)
+        [field: SerializeField]
+        public CharacterData SaveData;
+
+        public int TID => _define?.TID ?? 0;
+        public string CharacterName => _define?.Name ?? "Unknown";
+        public string SubType => _define?.SubType ?? "None";
+        public float BaseMaxHp => _define?.HP ?? 0f;
+        public float BaseAD => _define?.AD ?? 0f;
+        public float BaseDEF => _define?.DEF ?? 0f;
+
+        [Tooltip("依赖的战斗组件")]
+        [SerializeField] private CombatAttribute _combatAttr;
+
+        public void Initialize(CharacterDefine define, CharacterData saveData)
         {
-            RuntimeData.InitFromDefine(define);
-            Debug.Log($"<color=cyan>角色 [{define.Name}] 数据注入成功！MaxHP: {RuntimeData.MaxHp}</color>");
+            _define = define;
+            SaveData = saveData;
+
+            _combatAttr.Initialize(BaseMaxHp, saveData.CurrentHP, BaseAD, BaseDEF);
         }
+
+        public void SyncDataBeforeSave()
+        {
+            if (SaveData == null || _combatAttr == null) return;
+
+            SaveData.CurrentHP = _combatAttr.CurrentHp;
+            SaveData.IsDead = _combatAttr.IsDead;
+        }
+
+
     }
 }

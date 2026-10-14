@@ -31,10 +31,6 @@ namespace Emberwild.Character
         [Header("状态")]
         [SerializeField] private CharacterStateController _state;
 
-        [Header("连段配置")]
-        [Tooltip("每段伤害(段位 0~3)")]
-        [SerializeField] private float[] _attackDamages = { 10f, 12f, 15f, 20f };
-
         [Tooltip("单段攻击动画时长(秒)")]
         [SerializeField] private float _attackDuration = 0.5f;
 
@@ -44,8 +40,9 @@ namespace Emberwild.Character
         [Tooltip("移动锁时长(秒,必须 >= 攻击动画时长,确保动画期间完全锁住)")]
         [SerializeField] private float _lockDuration = 0.5f;
 
-        [Tooltip("命中点距离(角色前方米数)")]
-        [SerializeField] private float _hitPointDistance = 1.2f;
+        [Tooltip("实体数据")]
+        [SerializeField]  private CharacterEntity _entity;
+
 
         private int _comboIndex;
         private float _lastAttackTime;
@@ -53,6 +50,7 @@ namespace Emberwild.Character
         private bool _isAttacking;
         // 硬直期间按攻击,标记待推进段位;硬直结束消费。
         private bool _pendingComboAdvance;
+
 
         public int ComboIndex => _comboIndex;
         public bool IsAttacking => _isAttacking;
@@ -85,25 +83,21 @@ namespace Emberwild.Character
             {
                 _comboIndex = 0;
             }
-            if (_comboIndex > 3) _comboIndex = 0;
 
-            float damage = _attackDamages[_comboIndex];
-            Vector3 hitPoint = transform.position + transform.forward * _hitPointDistance;
-            Vector3 hitDir = transform.forward;
+            // 如果连击段数超过上限，重置为第一段
+            if (_comboIndex > 3) _comboIndex = 0;
 
             _isAttacking = true;
             _attackEndTime = Time.time + _attackDuration;
-            // 窗口起点对齐硬直结束时刻,保证窗口"接在硬直之后"。
             _lastAttackTime = _attackEndTime;
 
             if (_animator != null) _animator.PlayAttack(_comboIndex);
 
-            // 通知外部:伤害判定。
-            EventBus.Publish(new CharacterAttackHitEvent(_comboIndex, hitPoint, hitDir, damage));
-            // 通知外部:状态机锁定移动(由 CharacterStateController 接收)。
+            EventBus.Publish(new CharacterAttackHitEvent(_entity, _comboIndex));
             EventBus.Publish(new CharacterAttackStartedEvent(_comboIndex, _attackDuration, _lockDuration));
 
-            AppLog.Info("Combat", $"Attack combo={_comboIndex} dmg={damage:F1}");
+            // 修改日志：因为这里不再知道具体伤害，所以只打印触发了第几段攻击
+            AppLog.Info("Combat", $"Attack combo={_comboIndex} triggered");
 
             _comboIndex++;
         }

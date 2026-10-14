@@ -11,6 +11,7 @@ namespace Emberwild.Define
         public int TID;
         public string Name;
         public string Type;
+        public string SubType;
         public string Resource;
         public float HP;
         public float AD;

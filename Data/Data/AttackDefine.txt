@@ -1,0 +1,42 @@
+{
+  "700": {
+    "ComboGroup": "SwordAndShield",
+    "ComboIndex": 0,
+    "DmgRate": 1.0,
+    "HitboxType": 2,
+    "OffsetZ": 1.5,
+    "Param1": 1.0,
+    "Param2": 2.5,
+    "Knockback": 2.0
+  },
+  "701": {
+    "ComboGroup": "SwordAndShield",
+    "ComboIndex": 1,
+    "DmgRate": 1.2,
+    "HitboxType": 3,
+    "OffsetZ": 0.5,
+    "Param1": 3.0,
+    "Param2": 150.0,
+    "Knockback": 2.0
+  },
+  "702": {
+    "ComboGroup": "SwordAndShield",
+    "ComboIndex": 2,
+    "DmgRate": 1.5,
+    "HitboxType": 2,
+    "OffsetZ": 2.5,
+    "Param1": 0.5,
+    "Param2": 4.0,
+    "Knockback": 2.0
+  },
+  "703": {
+    "ComboGroup": "SwordAndShield",
+    "ComboIndex": 3,
+    "DmgRate": 2.0,
+    "HitboxType": 1,
+    "OffsetZ": 0.0,
+    "Param1": 3.5,
+    "Param2": 0.0,
+    "Knockback": 2.0
+  }
+}

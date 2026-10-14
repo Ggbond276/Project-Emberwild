@@ -2,8 +2,10 @@
 using Emberwild.Core.AppLog;
 using Emberwild.Core.Events;
 using Emberwild.Core.Singleton;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,98 +13,72 @@ using UnityEngine;
 
 namespace Emberwild.Data
 {
+    /// <summary>
+    /// 玩家存档大管家（全局单例）。
+    /// 职责：管理当前游戏会话的 CharacterData（U盘），负责本地 JSON 存档的读取与写入。
+    /// 绝对不做：扣血、伤害计算、战斗事件分发（这些全归 CombatAttribute 管）。
+    /// </summary>
     public class PlayerDataManager : Singleton<PlayerDataManager>
     {
-        private CharacterData _characterData;
-        
-        private bool _initialized = false;
-
-        private const string LOG_TAG = "Player";
-
-        public PlayerDataManager() {
-            Initialize();
-        }
-
-        
-        private void Initialize() {
-            if(_initialized) return;
-
-            if(_characterData == null) {
-                _characterData = new CharacterData();
-            }
-
-            if(_characterData.MaxHp <= 0f)
-            {
-                _characterData.MaxHp = 100f;
-            }
-            if (_characterData.CurrentHp <= 0f || _characterData.CurrentHp > _characterData.MaxHp)
-            {
-                _characterData.CurrentHp = _characterData.MaxHp;
-            }
-            _characterData.IsDead = false;
-
-            _initialized = true;
-
-            AppLog.Info(LOG_TAG, $"PlayerDataManager initialized: {_characterData.CurrentHp}/{_characterData.MaxHp}");
-        }
-
-
-        public float CurrentHp => _characterData.CurrentHp;
-        public float MaxHp => _characterData.MaxHp;
-        public bool IsDead => _characterData.IsDead;
-
-        public void TakeDamage(float damage, Vector3 fromDirection)
-        {
-            if (!_initialized) Initialize();
-            // 死亡后不再受伤
-            if (_characterData.IsDead) return;
-
-            if (damage <= 0f) return;
-
-            _characterData.CurrentHp = Mathf.Max(0f, _characterData.CurrentHp - damage);
-
-            if (_characterData.CurrentHp <= 0f)
-            {
-                _characterData.IsDead = true;
-                EventBus.Publish(new CharacterDiedEvent());
-                AppLog.Info(LOG_TAG, $"Character died (damage={damage:F1})");
-            }
-            else
-            {
-                EventBus.Publish(new CharacterDamagedEvent(damage, _characterData.CurrentHp, fromDirection));
-                AppLog.Info(LOG_TAG, $"Damaged -{damage:F1} HP={_characterData.CurrentHp:F1}/{_characterData.MaxHp:F1}");
-            }
-        }
+        private CharacterData _currentSaveData;
 
         /// <summary>
-        /// 重置为满血状态。供测试/复活用。
+        /// 提供给全局获取当前存档快照
         /// </summary>
-        public void ResetHealth()
+        public CharacterData CurrentSaveData => _currentSaveData;
+
+        /// <summary>
+        /// 假设这个是持久化目录
+        /// </summary>
+        private string SaveFilePath => Application.persistentDataPath + "/PlayerSave.json";
+
+        public PlayerDataManager()
         {
-            if (!_initialized) Initialize();
-            _characterData.ResetToFull();
-            EventBus.Publish(new CharacterHealthResetEvent());
-            AppLog.Info(LOG_TAG, $"Health reset: {_characterData.CurrentHp}/{_characterData.MaxHp}");
+            AppLog.Info("SaveSystem", "PlayerDataManager 启动，准备接管存档系统。");
+        }
+        public void Init() { }
+
+        public void LoadGame()
+        {
+            if(File.Exists(SaveFilePath))
+            {
+                string json = File.ReadAllText(SaveFilePath);
+                _currentSaveData = JsonConvert.DeserializeObject<CharacterData>(json);
+                AppLog.Info("PlayerDataManager", $"读档成功！上次记录 HP={_currentSaveData.CurrentHP}");
+            } else
+            {
+                AppLog.Info("PlayerDataManager", "未找到存档，创建新游戏存档...");
+                CreateNewGame();
+            }
         }
 
-        /// <summary>
-        /// 供外部获取完整数据快照(存档时调用)。
-        /// </summary>
-        public CharacterData GetData() => _characterData;
-
-        /// <summary>
-        /// 加载数据快照(读档时调用)。暂时不知道这个有啥用处
-        /// </summary>
-        public void LoadData(CharacterData data)
+        public void CreateNewGame()
         {
-            if (data == null)
+            _currentSaveData = new CharacterData
             {
-                AppLog.Warning(LOG_TAG, "LoadData: data is null, ignored");
+                TID = 19,
+                CurrentHP = 100f,
+                IsDead = false
+            };
+        }
+
+        public void SaveGame(CharacterEntity activePlayer)
+        {
+            if(activePlayer == null)
+            {
+                AppLog.Error("PlayerDataManager", "存档失败：找不到活动的玩家实体！");
                 return;
             }
-            _characterData = data;
-            _initialized = true;
-            AppLog.Info(LOG_TAG, $"Data loaded: HP={_characterData.CurrentHp}/{_characterData.MaxHp}, IsDead={_characterData.IsDead}");
+
+            activePlayer.SyncDataBeforeSave();
+
+            string json = JsonConvert.SerializeObject(_currentSaveData, Formatting.Indented);
+            File.WriteAllText(SaveFilePath, json);
+
+            AppLog.Info("PlayerDataManager", $"存档写入成功！路径: {SaveFilePath}");
         }
+
+
+
     }
 }
