@@ -1,4 +1,5 @@
 ﻿using Emberwild.Core.AppLog;
+using Emberwild.Core.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,13 @@ namespace Emberwild.Combat
 
         public bool IsDead { get; private set; }
 
+        private ICombatEntity _entity;
+
+        private void Awake()
+        {
+            _entity = GetComponent<ICombatEntity>();
+        }
+
         public void Initialize(float maxHp, float currentHp, float baseAD, float baseDEF)
         {
             MaxHp = maxHp;
@@ -40,8 +48,33 @@ namespace Emberwild.Combat
             if (CurrentHp <= 0)
             {
                 IsDead = true;
+                PublishDiedEvent();
                 AppLog.Info("Combat", $"{gameObject.name} 死亡");
+            } else
+            {
+                PublishDamagedEvent(damageAmount);
             }
         }
+
+        private void PublishDiedEvent()
+        {
+            if (_entity == null) return;
+            if (_entity.Faction == FactionType.Player)
+                EventBus.Publish(new CharacterDiedEvent());
+            else
+                EventBus.Publish(new EnemyDiedEvent());
+        }
+
+        private void PublishDamagedEvent(float damage)
+        {
+            if (_entity == null) return;
+            if (_entity.Faction == FactionType.Player)
+                EventBus.Publish(new CharacterDamagedEvent(damage, CurrentHp, Vector3.zero));
+            else
+                EventBus.Publish(new EnemyDamagedEvent(damage, CurrentHp, Vector3.zero));
+        }
+
+
+
     }
 }

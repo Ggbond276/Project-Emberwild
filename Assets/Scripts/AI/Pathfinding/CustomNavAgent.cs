@@ -40,7 +40,7 @@ namespace Emberwild.AI.Pathfinding
         void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationY; ;
+            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationY;
         }
 
         /// <summary>
@@ -144,7 +144,9 @@ namespace Emberwild.AI.Pathfinding
                 Gizmos.color = Color.black;
                 for (int i = 0; i < _currentPath.Count; i++)
                 {
-                    Gizmos.DrawCube(_currentPath[i].worldPos, new Vector3(0.8f, 0.2f, 0.8f));
+                    // 使用 DrawWireCube 绘制镂空的线框方块，完美解决遮挡问题
+                    Gizmos.DrawWireCube(_currentPath[i].worldPos, new Vector3(0.8f, 0.2f, 0.8f));
+
                     if (i < _currentPath.Count - 1)
                     {
                         Gizmos.DrawLine(_currentPath[i].worldPos, _currentPath[i + 1].worldPos);

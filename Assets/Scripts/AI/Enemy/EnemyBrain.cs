@@ -1,6 +1,7 @@
 ﻿using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
 using Emberwild.Core.AppLog;
+using Emberwild.Core.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,17 +37,19 @@ namespace Emberwild.AI.Enemy
         public EnemyEntity Entity => _entity;
         public EnemyCombat Combat => _combat;
 
-        
-
 
         [Header("决策参数")]
         [Tooltip("奔跑速度。必须与 CustomNavAgent.moveSpeed 一致,用于把实际速度归一化成 0~1")]
         [SerializeField] private float _runSpeed = 4f;
         [Tooltip("近战攻击触发距离(米)")]
         [SerializeField] private float _meleeRange = 1.6f;
+        [Tooltip("受击硬直时长(秒)")]
+        [SerializeField] private float _hitstunDuration = 0.4f;
 
         public float RunSpeed => _runSpeed;
         public float MeleeRange => _meleeRange;
+        public float HitStunDuration => _hitstunDuration;
+
 
         [Tooltip("出生时进入的状态")]
         [SerializeField] private EnemyStateType _defaultState = EnemyStateType.Idle;
@@ -86,6 +89,8 @@ namespace Emberwild.AI.Enemy
             _states[EnemyStateType.Idle] = new IdleState();
             _states[EnemyStateType.Chase] = new ChaseState();
             _states[EnemyStateType.AttackMelee] = new AttackMeleeState();
+            _states[EnemyStateType.Hit] = new HitState();
+            _states[EnemyStateType.Dead] = new DeadState();
         }
 
         private void Start()
@@ -105,6 +110,18 @@ namespace Emberwild.AI.Enemy
 
             _initialized = true;
             ChangeState(_defaultState);
+        }
+
+        private void OnEnable()
+        {
+            EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
+            EventBus.Subscribe<EnemyDiedEvent>(OnDied);
+        }
+
+        private void OnDisable()
+        {
+            EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
+            EventBus.Unsubscribe<EnemyDiedEvent>(OnDied);
         }
 
         private void Update()
@@ -131,6 +148,26 @@ namespace Emberwild.AI.Enemy
             _currentState.OnEnter(this);
 
             AppLog.Info("Enemy", $"{name} → {type}");
+        }
+
+        /// <summary>
+        /// 受击：打断当前状态 切换到Hit
+        /// </summary>
+        /// <param name="evt"></param>
+        private void OnDamaged(EnemyDamagedEvent evt)
+        {
+            if (!_initialized) return;
+            ChangeState(EnemyStateType.Hit);
+        }
+
+        /// <summary>
+        /// 死亡：最高有点级别 切到Dead
+        /// </summary>
+        /// <param name="evt"></param>
+        private void OnDied(EnemyDiedEvent evt)
+        {
+            if (!_initialized) return;
+            ChangeState(EnemyStateType.Dead);
         }
     }
 }

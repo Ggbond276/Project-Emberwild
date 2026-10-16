@@ -11,5 +11,7 @@ namespace Emberwild.AI.Enemy.State
         Idle,
         Chase,
         AttackMelee, // 近战攻击
+        Hit,
+        Dead,
     }
 }
