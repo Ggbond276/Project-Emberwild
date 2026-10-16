@@ -23,21 +23,30 @@ namespace Emberwild.AI.Enemy
     public class EnemyBrain : MonoBehaviour
     {
         [Header("组件引用")]
-        [SerializeField] private CustomNavAgent _agent;
-        [SerializeField] private EnemyPerception _perception;
-        [SerializeField] private EnemyAnimator _animator;
-        [SerializeField] private EnemyEntity _entity;
+        [SerializeField] private CustomNavAgent _agent; // 腿
+        [SerializeField] private EnemyPerception _perception; // 眼睛
+        [SerializeField] private EnemyAnimator _animator; // 动画
+        [SerializeField] private EnemyEntity _entity; // 数据
+        [SerializeField] private EnemyCombat _combat; // 手
+
 
         public CustomNavAgent Agent => _agent;
         public EnemyPerception Perception => _perception;
         public EnemyAnimator Animator => _animator;
         public EnemyEntity Entity => _entity;
-        public float RunSpeed => _runSpeed;
+        public EnemyCombat Combat => _combat;
+
+        
 
 
         [Header("决策参数")]
         [Tooltip("奔跑速度。必须与 CustomNavAgent.moveSpeed 一致,用于把实际速度归一化成 0~1")]
         [SerializeField] private float _runSpeed = 4f;
+        [Tooltip("近战攻击触发距离(米)")]
+        [SerializeField] private float _meleeRange = 1.6f;
+
+        public float RunSpeed => _runSpeed;
+        public float MeleeRange => _meleeRange;
 
         [Tooltip("出生时进入的状态")]
         [SerializeField] private EnemyStateType _defaultState = EnemyStateType.Idle;
@@ -71,10 +80,12 @@ namespace Emberwild.AI.Enemy
             if (_perception == null) _perception = GetComponent<EnemyPerception>();
             if (_animator == null) _animator = GetComponent<EnemyAnimator>();
             if (_entity == null) _entity = GetComponent<EnemyEntity>();
+            if (_combat == null) _combat = GetComponent<EnemyCombat>();
 
             // 注册状态(新增状态就在这里加一行)
             _states[EnemyStateType.Idle] = new IdleState();
             _states[EnemyStateType.Chase] = new ChaseState();
+            _states[EnemyStateType.AttackMelee] = new AttackMeleeState();
         }
 
         private void Start()

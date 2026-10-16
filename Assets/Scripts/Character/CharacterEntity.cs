@@ -14,7 +14,7 @@ namespace Emberwild.Character
     /// 角色实体大管家 — 负责桥接 Define 与 Data，并向外部提供干净的数据访问接口。
     /// </summary>
     [RequireComponent(typeof(CombatAttribute))]
-    public class CharacterEntity : MonoBehaviour
+    public class CharacterEntity : MonoBehaviour, ICombatEntity
     {
         private CharacterDefine _define;
 
@@ -46,6 +46,10 @@ namespace Emberwild.Character
             SaveData.CurrentHP = _combatAttr.CurrentHp;
             SaveData.IsDead = _combatAttr.IsDead;
         }
+
+        public FactionType Faction => FactionType.Player;
+        public Transform Transform => transform;
+        public CombatAttribute Attribute => _combatAttr;
 
 
     }

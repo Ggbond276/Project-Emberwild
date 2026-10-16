@@ -14,13 +14,10 @@ namespace Emberwild.Combat
 {
     public class CombatDetector : Singleton<CombatDetector>
     {
-        private readonly int _targetLayerMask;
-
         public CombatDetector()
         {
-            _targetLayerMask = LayerMask.GetMask("Monster");
             EventBus.Subscribe<CharacterAttackHitEvent>(OnAttackHitTriggered);
-            AppLog.Info("CombatDetector", $"{_targetLayerMask}");
+            AppLog.Info("CombatDetector", "CombatDetector 就绪(按阵营判定目标层)");
         }
         public void Init()
         {
@@ -28,40 +25,57 @@ namespace Emberwild.Combat
         }
         private void OnAttackHitTriggered(CharacterAttackHitEvent evt)
         {
-            var attackerEntity = evt.Attacker;
-            if (attackerEntity == null) return;
+            var attacker = evt.Attacker;
+            if (attacker == null) return;
 
-            var comboIndex = evt.ComboIndex;
-
-            var attackerAttr = attackerEntity.GetComponent<CombatAttribute>();
+            var attackerAttr = attacker.Attribute; 
             if (attackerAttr == null || attackerAttr.IsDead) return;
 
-            string subType = attackerEntity.SubType;
+            string subType = attacker.SubType;
 
             if(!DataManager.Instance.ComboGroupDict.TryGetValue(subType, out var comboDict) ||
-                !comboDict.TryGetValue(comboIndex, out var atkDefine))
+                !comboDict.TryGetValue(evt.ComboIndex, out var atkDefine))
             {
                 AppLog.Error("Combat", $"查表失败: 找不到武器 [{subType}] 的第 [{evt.ComboIndex}] 段攻击配置！");
                 return;
             }
 
-            Vector3 center = attackerEntity.transform.position + attackerEntity.transform.forward * atkDefine.OffsetZ;
-            Collider[] hits = PerformPhysicsOverlap(center, attackerEntity.transform, atkDefine);
-            ProcessHits(hits, attackerAttr, atkDefine, center, attackerEntity.transform.forward);
+            Vector3 center = attacker.Transform.position + attacker.Transform.forward * atkDefine.OffsetZ;
+            int targetMask = GetTargetLayer(attacker.Faction);
+            Collider[] hits = PerformPhysicsOverlap(center, attacker.Transform, atkDefine, targetMask);
+            ProcessHits(hits, attackerAttr, atkDefine, center, attacker.Transform.forward);
         }
 
-        private Collider[] PerformPhysicsOverlap(Vector3 center, Transform attackerTransform, AttackDefine atkDefine)
+        /// <summary>
+        /// 根据玩家所在阵营 得到目标攻击层级
+        /// </summary>
+        /// <param name="faction"></param>
+        /// <returns></returns>
+        private int GetTargetLayer(FactionType faction)
+        {
+            return faction == FactionType.Player ? LayerMask.GetMask("Monster") : LayerMask.GetMask("Player");
+        }
+
+        /// <summary>
+        /// TODO : 这里的技能判定是存在问题的 关于矩形是否应该倾斜配置表应该引入Param3 第三个参数来参与计算
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="attackerTransform"></param>
+        /// <param name="atkDefine"></param>
+        /// <param name="targetLayerMask"></param>
+        /// <returns></returns>
+        private Collider[] PerformPhysicsOverlap(Vector3 center, Transform attackerTransform, AttackDefine atkDefine, int targetLayerMask)
         {
             switch(atkDefine.HitboxType)
             {
                 case 1: // 纯圆形判定
-                    return Physics.OverlapSphere(center, atkDefine.Param1, _targetLayerMask);
+                    return Physics.OverlapSphere(center, atkDefine.Param1, targetLayerMask);
                 case 2: // 矩形判定 (计算长宽的一半，根据玩家朝向画矩形)
                     Vector3 halfExtents = new Vector3(atkDefine.Param1 / 2f, 1f, atkDefine.Param2 / 2f);
                     Quaternion tiltedRotation = attackerTransform.rotation * Quaternion.Euler(0, 0, -20f);
-                    return Physics.OverlapBox(center, halfExtents, tiltedRotation, _targetLayerMask);
+                    return Physics.OverlapBox(center, halfExtents, tiltedRotation, targetLayerMask);
                 case 3: // 扇形判定
-                    return Physics.OverlapSphere(center, atkDefine.Param1, _targetLayerMask);
+                    return Physics.OverlapSphere(center, atkDefine.Param1, targetLayerMask);
                 default:
                     AppLog.Error("Combat", $"未知的 HitboxType: {atkDefine.HitboxType}");
                     return new Collider[0];
@@ -97,5 +111,8 @@ namespace Emberwild.Combat
                 defenderAttr.TakeDamage(finalDamage);
             }
         }
+
+
+
     }
 }

@@ -23,6 +23,13 @@ namespace Emberwild.AI.Enemy.State
                 return;
             }
 
+            // 距离足够近 → 切近战攻击
+            if (bb.DistanceToTarget <= brain.MeleeRange)
+            {
+                brain.ChangeState(EnemyStateType.AttackMelee);
+                return;
+            }
+
             brain.Agent.SetDestination(bb.Target.position);
 
             brain.Animator.SetMoveSpeed(brain.NormalizedSpeed);

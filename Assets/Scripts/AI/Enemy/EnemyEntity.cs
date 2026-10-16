@@ -20,7 +20,7 @@ namespace Emberwild.AI.Enemy
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CombatAttribute))]
-    public class EnemyEntity : MonoBehaviour
+    public class EnemyEntity : MonoBehaviour, ICombatEntity
     {
         [Header("数据")]
         [Tooltip("对应 Data/Data/CharacterDefine.txt 里的 TID")]
@@ -77,6 +77,8 @@ namespace Emberwild.AI.Enemy
         }
 
 
+        public FactionType Faction => FactionType.Monster;
+        public Transform Transform => transform;
 
     }
 }

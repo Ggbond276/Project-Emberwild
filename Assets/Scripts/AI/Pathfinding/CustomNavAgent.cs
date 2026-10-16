@@ -40,7 +40,7 @@ namespace Emberwild.AI.Pathfinding
         void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationY; ;
         }
 
         /// <summary>
@@ -63,6 +63,25 @@ namespace Emberwild.AI.Pathfinding
             _hasDestination = false;
             _currentPath = null;
             _rb.velocity = new Vector3(0, _rb.velocity.y, 0);
+        }
+
+        /// <summary>
+        /// 【指令】立即面向目标世界坐标(仅绕 Y 轴瞬时转向)。
+        /// 供攻击等"需要瞬间转正朝向"的场景使用;移动中的平滑转向由 FixedUpdate 的 Slerp 负责,这里是一次性硬转。
+        /// 同时清零角速度,避免残留角速度引起自旋。
+        /// </summary>
+        /// <param name="worldTarget">要面向的世界坐标(通常是玩家位置)</param>
+        public void FaceTowards(Vector3 worldTarget)
+        {
+            if (_rb == null) return;
+
+            Vector3 dir = worldTarget - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f) return;
+
+            // 清掉可能残留的角速度,再直接锁定朝向,杜绝自旋
+            _rb.angularVelocity = Vector3.zero;
+            _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
         }
 
         void FixedUpdate()
