@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Emberwild · 怪物 AI 架构方案</title>
+<style>
+  :root{
+    --bg:#f5f7fb;--panel:#fff;--line:#e2e8f0;--ink:#16233a;--muted:#64748b;
+    --decide:#7c5cf0;--exec:#3f6fd8;--view:#2f9e56;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.6;
+    font-family:"Segoe UI","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;
+    padding:32px 22px 60px;}
+  .wrap{max-width:1120px;margin:0 auto;}
+  h1{font-size:24px;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 1px 3px rgba(16,32,56,.05),0 10px 28px -18px rgba(16,32,56,.18);
+    padding:18px 20px;margin-bottom:18px;}
+  h2{font-size:16px;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+  h2::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--exec);}
+  .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:20px;}
+  .hcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 17px;
+    box-shadow:0 1px 3px rgba(16,32,56,.05);}
+  .hcard .k{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.4px;}
+  .hcard .v{font-size:14px;font-weight:600;margin-top:5px;}
+  .hcard .d{font-size:12px;color:#475569;margin-top:5px;}
+
+  /* 三层架构 */
+  .layer{border-radius:12px;padding:14px 18px;margin-bottom:10px;border:1.5px solid;position:relative;}
+  .layer .lt{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;}
+  .layer .ld{font-size:12.5px;margin-top:6px;color:#334155;}
+  .layer .no{font-size:12px;margin-top:6px;color:#8a5a10;background:#fff8e8;border-radius:6px;padding:4px 9px;display:inline-block;}
+  .l-decide{background:#f6f2ff;border-color:#c9b8ff;}
+  .l-decide .lt{color:var(--decide);}
+  .l-exec{background:#f0f5ff;border-color:#bcd2ff;}
+  .l-exec .lt{color:var(--exec);}
+  .l-view{background:#f0faf3;border-color:#bfe6cd;}
+  .l-view .lt{color:var(--view);}
+  .arrowdown{text-align:center;color:#94a3b8;font-size:12px;margin:-4px 0 6px;font-weight:600;}
+
+  /* 树 */
+  .tree{font-family:Consolas,"Courier New",monospace;font-size:12.5px;color:#334155;
+    background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+    white-space:pre;overflow-x:auto;line-height:1.8;}
+  .tree b{color:var(--exec);font-weight:600;}
+  .tree i{color:#94a3b8;font-style:normal;}
+  .tree .g{color:var(--view);font-weight:600;}
+  .tree .p{color:var(--decide);font-weight:600;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #eef2f7;vertical-align:top;}
+  th{color:var(--muted);font-weight:600;font-size:12px;background:#fafbfd;}
+  tr:last-child td{border-bottom:none;}
+  code{background:#eef2f7;border-radius:4px;padding:1px 6px;font-size:12px;
+    font-family:Consolas,"Courier New",monospace;color:#2b3a4d;}
+  .ok{color:#2f9e56;font-weight:600;}.bad{color:#c0392b;font-weight:600;}.warn{color:#b07a1a;font-weight:600;}
+  ul.tips{margin:0;padding-left:20px;font-size:13.5px;line-height:2;}
+  ul.tips b{color:#16233a;}
+  .warnbox{background:#fff8e8;border:1px solid #f2dfae;border-radius:10px;padding:13px 16px;
+    font-size:12.5px;color:#7a5710;margin-top:12px;}
+  .warnbox b{color:#8a5710;}
+  .dangerbox{background:#fdeeee;border:1px solid #f5c9c9;border-radius:10px;padding:13px 16px;
+    font-size:12.5px;color:#8c2b2b;}
+  .dangerbox b{color:#c0392b;}
+  svg{display:block;width:100%;height:auto;}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:#475569;margin-top:12px;}
+  .legend .it{display:flex;align-items:center;gap:6px;}
+  .sw{width:15px;height:10px;border-radius:3px;border:1.5px solid;}
+  .stage{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+  .st{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:#fbfcfe;position:relative;}
+  .st .n{font-size:11px;font-weight:700;color:#fff;background:var(--exec);border-radius:20px;
+    padding:1px 9px;display:inline-block;margin-bottom:7px;}
+  .st .t{font-weight:600;font-size:13px;margin-bottom:5px;}
+  .st .d{font-size:12px;color:#475569;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>怪物 AI 与状态机 · 架构方案</h1>
+  <div class="sub">Project Emberwild &nbsp;·&nbsp; 样本怪物：Shell（小螃蟹） &nbsp;·&nbsp; 承接 Docs/Planing 1–3 号策划案</div>
+
+  <div class="hero">
+    <div class="hcard"><div class="k">核心思想</div><div class="v">决策与表现分离</div><div class="d">AI 决定「做什么」，Animator 决定「长什么样」，两者通过参数通信，互不依赖。</div></div>
+    <div class="hcard"><div class="k">技术选型</div><div class="v">分层状态机（HFSM）</div><div class="d">8 个行为用状态机足够；行为树留到 3 只怪以上再引入。</div></div>
+    <div class="hcard"><div class="k">工作量</div><div class="v">新写 6 个类</div><div class="d">复用已有寻路 / 属性 / 伤害 / 事件 / 数据表，不重复造轮子。</div></div>
+    <div class="hcard"><div class="k">终极目标</div><div class="v">换怪只换动画</div><div class="d">决策代码零改动 —— 做到它才算真正理解状态机。</div></div>
+  </div>
+
+  <!-- 三层架构 -->
+  <div class="card">
+    <h2>一、三层分离架构（本系统的地基）</h2>
+    <div class="layer l-decide">
+      <div class="lt">🧠 决策层 · EnemyBrain + IEnemyState + Blackboard</div>
+      <div class="ld">职责：读感知结果 → 决定当前状态 → 下发语义指令（ChaseTo / PlayAttack / StopMove）</div>
+      <div class="no">严格不做：不碰 Animator 参数、不碰 Transform、不碰 Rigidbody</div>
+    </div>
+    <div class="arrowdown">▼ 语义指令</div>
+    <div class="layer l-exec">
+      <div class="lt">🦵 执行层 · CustomNavAgent（已有） + EnemyCombat（新）</div>
+      <div class="ld">职责：真实位移（SetDestination）／真实伤害判定（发攻击事件）</div>
+      <div class="no">严格不做：不碰 Animator、不做状态决策</div>
+    </div>
+    <div class="arrowdown">▼ 状态广播（VelocityMagnitude / 攻击事件）</div>
+    <div class="layer l-view">
+      <div class="lt">🎬 表现层 · EnemyAnimator（新） → Shell.controller</div>
+      <div class="ld">职责：把语义指令翻译成 Animator 参数（SetMoveSpeed / PlayBiteAttack）</div>
+      <div class="no">严格不做：不读游戏状态（HP / 距离 / 目标）</div>
+    </div>
+    <div class="warnbox">
+      <b>为什么必须三层？</b>你现在的 <code>EnemyAI.cs</code> 把「感知 + 决策 + 移动」全塞在一个 Update 里。行为增到 8 个时，这个类会膨胀到 500 行、无法维护。拆开后每个类都保持你项目一贯的单一职责水准。
+    </div>
+  </div>
+
+  <!-- 状态机 -->
+  <div class="card">
+    <h2>二、AI 状态机（8 个状态 + 全局打断）</h2>
+    <svg viewBox="0 0 1020 520" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Microsoft YaHei, sans-serif">
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 z" fill="#94a3b8"/>
+        </marker>
+        <marker id="ahd" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 z" fill="#c3ccd8"/>
+        </marker>
+      </defs>
+
+      <!-- edges -->
+      <path d="M152,273 H196" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="174" y="264" font-size="10.5" fill="#64748b" text-anchor="middle">发现玩家</text>
+
+      <path d="M328,273 H376" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="352" y="264" font-size="10.5" fill="#64748b" text-anchor="middle">停顿结束</text>
+
+      <path d="M508,262 L620,125" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="600" y="180" font-size="10.5" fill="#64748b" text-anchor="middle">距离 ≤ 近战距</text>
+
+      <path d="M508,273 H620" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="564" y="264" font-size="10.5" fill="#64748b" text-anchor="middle">中距 + 冷却好</text>
+
+      <path d="M508,284 L620,421" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="530" y="360" font-size="10.5" fill="#64748b" text-anchor="middle">3–7m + Roll 就绪</text>
+
+      <path d="M420,296 C420,382 328,382 328,430" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="404" y="372" font-size="10.5" fill="#64748b" text-anchor="middle">HP &lt; 30%</text>
+
+      <path d="M442,250 V180 H86 V250" stroke="#c3ccd8" stroke-width="1.8" stroke-dasharray="6 5" fill="none" marker-end="url(#ahd)"/>
+      <text x="264" y="172" font-size="10.5" fill="#94a3b8" text-anchor="middle">丢失目标</text>
+
+      <path d="M508,290 C620,400 760,427 860,427" stroke="#94a3b8" stroke-width="1.8" fill="none" marker-end="url(#ah)"/>
+      <text x="720" y="412" font-size="10.5" fill="#64748b" text-anchor="middle">HP = 0</text>
+
+      <!-- nodes -->
+      <g>
+        <rect x="20" y="250" width="132" height="46" rx="10" fill="#f1f3f6" stroke="#9aa0a6" stroke-width="1.6"/>
+        <text x="86" y="271" font-size="13" font-weight="600" fill="#5f6368" text-anchor="middle">Idle</text>
+        <text x="86" y="286" font-size="10" fill="#8a9096" text-anchor="middle">待机 · 默认</text>
+      </g>
+      <g>
+        <rect x="196" y="250" width="132" height="46" rx="10" fill="#fff7e6" stroke="#e0a13a" stroke-width="1.6"/>
+        <text x="262" y="271" font-size="13" font-weight="600" fill="#8a5710" text-anchor="middle">Alert</text>
+        <text x="262" y="286" font-size="10" fill="#a9762a" text-anchor="middle">警戒 · 转向玩家</text>
+      </g>
+      <g>
+        <rect x="376" y="250" width="132" height="46" rx="10" fill="#e9f1fd" stroke="#3f6fd8" stroke-width="2.2"/>
+        <text x="442" y="271" font-size="13" font-weight="700" fill="#173a6b" text-anchor="middle">Chase</text>
+        <text x="442" y="286" font-size="10" fill="#4a6fa5" text-anchor="middle">追击 · 核心状态</text>
+      </g>
+      <g>
+        <rect x="620" y="96" width="132" height="46" rx="10" fill="#fdeeee" stroke="#dc4b4b" stroke-width="1.6"/>
+        <text x="686" y="117" font-size="12.5" font-weight="600" fill="#b3261e" text-anchor="middle">AttackMelee</text>
+        <text x="686" y="132" font-size="10" fill="#c1494c" text-anchor="middle">Bite Attack ↩ Chase</text>
+      </g>
+      <g>
+        <rect x="620" y="250" width="132" height="46" rx="10" fill="#fdeeee" stroke="#dc4b4b" stroke-width="1.6"/>
+        <text x="686" y="271" font-size="12.5" font-weight="600" fill="#b3261e" text-anchor="middle">AttackRanged</text>
+        <text x="686" y="286" font-size="10" fill="#c1494c" text-anchor="middle">Projectile / Cast ↩</text>
+      </g>
+      <g>
+        <rect x="620" y="404" width="132" height="46" rx="10" fill="#fff2e0" stroke="#dd8f2a" stroke-width="1.6"/>
+        <text x="686" y="425" font-size="12.5" font-weight="600" fill="#8a5710" text-anchor="middle">RollChase</text>
+        <text x="686" y="440" font-size="10" fill="#a9762a" text-anchor="middle">滚动冲刺 ↩ Chase</text>
+      </g>
+      <g>
+        <rect x="196" y="430" width="132" height="46" rx="10" fill="#e6f7f5" stroke="#0f9b8e" stroke-width="1.6"/>
+        <text x="262" y="451" font-size="12.5" font-weight="600" fill="#0b6f66" text-anchor="middle">Hide</text>
+        <text x="262" y="466" font-size="10" fill="#3f8a83" text-anchor="middle">缩壳 · 减伤 ↩</text>
+      </g>
+      <g>
+        <rect x="860" y="404" width="132" height="46" rx="10" fill="#3a4553" stroke="#2a323d" stroke-width="1.6"/>
+        <text x="926" y="425" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">Dead</text>
+        <text x="926" y="440" font-size="10" fill="#c3ccd8" text-anchor="middle">终止 · 无出口</text>
+      </g>
+
+      <!-- 全局打断标注 -->
+      <rect x="620" y="480" width="380" height="30" rx="8" fill="#fff8e8" stroke="#f2dfae" stroke-width="1.2"/>
+      <text x="810" y="499" font-size="11" fill="#8a5710" text-anchor="middle">全局打断：受击 → TakeDamage（Any State）｜HP=0 → Dead（最高优先级）</text>
+    </svg>
+    <div class="legend">
+      <div class="it"><span class="sw" style="background:#e9f1fd;border-color:#3f6fd8"></span>核心状态</div>
+      <div class="it"><span class="sw" style="background:#fdeeee;border-color:#dc4b4b"></span>攻击状态</div>
+      <div class="it"><span class="sw" style="background:#fff2e0;border-color:#dd8f2a"></span>特殊行为</div>
+      <div class="it"><span class="sw" style="background:#3a4553;border-color:#2a323d"></span>终止状态</div>
+      <div class="it">↩ = 动作播完返回 Chase</div>
+    </div>
+  </div>
+
+  <!-- Animator -->
+  <div class="card">
+    <h2>三、Animator 重建方案（30 个平铺状态 → 4 个分区）</h2>
+    <div class="tree"><b>Base Layer</b>
+│
+├── <b>[Locomotion]</b>  <i>← 子状态机（默认入口）</i>
+│   ├── Idle                       <i>循环 · Speed ≈ 0</i>
+│   └── Move                       <i>1D Blend Tree：Walk → Run</i>
+│
+├── <b>[Action]</b>      <i>← 子状态机</i>
+│   ├── BiteAttack                 <i>单次 · 近战</i>
+│   ├── ProjectileAttack           <i>单次 · 远程</i>
+│   ├── CastSpell                  <i>单次 · 施法</i>
+│   └── Roll                       <i>单次 · 滚动</i>
+│
+├── <b>[Reaction]</b>    <i>← 子状态机</i>
+│   ├── TakeDamage                 <i>单次 · 受击</i>
+│   ├── Hide                       <i>循环 · IsHidden = true</i>
+│   └── Unhide                     <i>单次 · Hide to Idle</i>
+│
+└── <b>Dead</b>                       <i>单次 · 终止态，无出口</i></div>
+
+    <div class="dangerbox" style="margin-top:14px">
+      <b>现状诊断：</b>当前 <code>Shell.controller</code> 的 <code>m_AnimatorParameters: []</code> —— <b>零参数</b>，且状态名混乱（Idle 5 / Idle 6 / Idle 7、Walk Forward In Place 0/1），全靠 Exit Time 自动串联。这是「演示机」，AI 无法驱动。<b>必须重建</b>（保留文件本身，在内部清理）。
+    </div>
+
+    <h2 style="margin-top:22px">参数表（10 个）</h2>
+    <table>
+      <tr><th style="width:180px">参数</th><th style="width:90px">类型</th><th>用途</th></tr>
+      <tr><td><code>Speed</code></td><td>Float</td><td>0 = Idle，0.5 = Walk，1 = Run（驱动 Blend Tree）</td></tr>
+      <tr><td><code>IsDead</code></td><td>Bool</td><td>死亡锁，最高优先级</td></tr>
+      <tr><td><code>IsHidden</code></td><td>Bool</td><td>缩壳循环状态</td></tr>
+      <tr><td><code>Attack</code></td><td>Trigger</td><td>近战 Bite</td></tr>
+      <tr><td><code>ProjectileAttack</code></td><td>Trigger</td><td>远程</td></tr>
+      <tr><td><code>CastSpell</code></td><td>Trigger</td><td>施法</td></tr>
+      <tr><td><code>Roll</code></td><td>Trigger</td><td>滚动冲刺</td></tr>
+      <tr><td><code>TakeDamage</code></td><td>Trigger</td><td>受击（Any State 打断）</td></tr>
+      <tr><td><code>Die</code></td><td>Trigger</td><td>死亡</td></tr>
+      <tr><td><code>Unhide</code></td><td>Trigger</td><td>出壳</td></tr>
+    </table>
+
+    <div class="warnbox">
+      <b>关键原则：</b>「程度渐变」用 Blend Tree（Idle↔Walk↔Run），「事件切换」用 State + Trigger（攻击 / 受击 / 死亡）。
+      绝不能用一个大 Blend Tree 混合攻击和死亡 —— 那是离散事件，不是插值关系。<br>
+      <b>Any State 三要点：</b>① <code>Can Transition To Self = false</code>（否则受击动画自我打断、抽搐）；② 过渡到一次性状态时 <code>Has Exit Time = false</code>（否则失去打断意义）；③ Dead 无出口，<code>IsDead</code> 一旦为 true 永不复位。
+    </div>
+  </div>
+
+  <!-- 组件 -->
+  <div class="card">
+    <h2>四、组件挂载清单（新写 6 个 · 复用 3 个）</h2>
+    <div class="tree"><b>Shell (GameObject)</b>   <i>[Layer: Monster] ← 必须是 Monster 层</i>
+├─ Rigidbody                <i>物理载体 · 必须加（CustomNavAgent 会读取）</i>
+├─ CapsuleCollider          <i>受击体</i>
+├─ Animator                 <i>→ 重建后的 Shell.controller</i>
+├─ <span class="g">CombatAttribute</span>            <i>复用 · HP/AD/DEF</i>
+├─ <span class="p">EnemyEntity</span>                <i>新写 · 数据桥接（替代 CharacterEntity）</i>
+├─ <span class="g">CustomNavAgent</span>            <i>复用 · 腿（寻路）</i>
+├─ <span class="p">EnemyPerception</span>           <i>新写 · 眼（视野扫描写黑板）</i>
+├─ <span class="p">EnemyAnimator</span>             <i>新写 · 嘴（语义级动画 API）</i>
+├─ <span class="p">EnemyCombat</span>               <i>新写 · 手（发起攻击判定）</i>
+├─ <span class="p">EnemyStateController</span>      <i>新写 · 锁（CanMove / CanAttack）</i>
+└─ <span class="p">EnemyBrain</span>                <i>新写 · 脑（决策）★ 主入口</i></div>
+    <div class="warnbox">
+      <b>现状：</b>你的 <code>Shell.prefab</code> 目前<b>只有 1 个 Animator 组件</b>，没有 Rigidbody、没有 Collider —— 而 <code>CustomNavAgent.Awake()</code> 会 <code>GetComponent&lt;Rigidbody&gt;()</code> 并设置旋转约束。<b>不加 Rigidbody 会直接报空引用。</b>
+    </div>
+  </div>
+
+  <!-- 缺口 -->
+  <div class="card">
+    <h2>五、必须先修的 4 个架构缺口</h2>
+    <table>
+      <tr><th style="width:200px">缺口</th><th>问题</th><th style="width:110px">优先级</th></tr>
+      <tr>
+        <td><code>CombatDetector</code><br><span style="font-size:11.5px;color:#64748b">只打 Monster 层</span></td>
+        <td><code>_targetLayerMask = LayerMask.GetMask("Monster")</code> —— 这是给玩家打怪物用的。<b>怪物攻击玩家时依然只找 Monster 层 → 打不到玩家。</b>需引入阵营概念：攻击者是 Player 则打 Monster，是 Monster 则打 Player。</td>
+        <td><span class="bad">🔴 阻塞</span></td>
+      </tr>
+      <tr>
+        <td><code>EnemySpawner</code><br><span style="font-size:11.5px;color:#64748b">计数只增不减</span></td>
+        <td><code>_currentEnemyCount++</code> 但怪物死亡无人减 → 刷满 maxEnemies 后<b>永久停止刷怪</b>。需监听 <code>EnemyDieEvent</code> 回调减计数。</td>
+        <td><span class="warn">🟡 需修</span></td>
+      </tr>
+      <tr>
+        <td><code>CharacterEntity</code><br><span style="font-size:11.5px;color:#64748b">依赖存档数据</span></td>
+        <td>它 <code>Initialize()</code> 读 <code>saveData.CurrentHP</code>，怪物没有 <code>CharacterData</code> → 空引用。建议新写 <code>EnemyEntity</code>（只读 CharacterDefine）。</td>
+        <td><span class="warn">🟡 需修</span></td>
+      </tr>
+      <tr>
+        <td><code>CharacterDefine.txt</code><br><span style="font-size:11.5px;color:#64748b">没有 Shell 条目</span></td>
+        <td>目前只有 MC17 / MC19 / CapsuleEnemy。需新增 Shell（TID 2001），且 <code>SubType</code> 必须与 AttackDefine 的 <code>ComboGroup</code> 完全一致。</td>
+        <td><span class="warn">🟡 需修</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- 阶段 -->
+  <div class="card">
+    <h2>六、开发阶段（每个阶段端到端闭环）</h2>
+    <div class="stage">
+      <div class="st"><span class="n">阶段一</span><div class="t">活过来</div><div class="d">挂组件 + 重建 controller（Locomotion）+ Perception + Brain（Idle/Chase）<br><b>验证：</b>螃蟹能发现玩家并追过来</div></div>
+      <div class="st"><span class="n">阶段二</span><div class="t">能打人</div><div class="d">修 CombatDetector 阵营 + EnemyCombat + Action 分区 + AttackMelee<br><b>验证：</b>靠近后咬人，玩家掉血</div></div>
+      <div class="st"><span class="n">阶段三</span><div class="t">受击与死亡</div><div class="d">StateController + Reaction 分区 + Dead + Any State 打断<br><b>验证：</b>打螃蟹会打断动作，打死播死亡</div></div>
+      <div class="st"><span class="n">阶段四</span><div class="t">变聪明</div><div class="d">远程 + 冷却 + 缩壳减伤 + 滚动冲刺<br><b>验证：</b>远距离放远程、残血缩壳、中距滚过来</div></div>
+    </div>
+    <div class="warnbox">
+      <b>本阶段严格不做：</b>行为树、Root Motion、群体 AI / 仇恨转移、寻路算法修改、玩家侧逻辑修改、动画资源重命名。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>七、最终目标</h2>
+    <ul class="tips">
+      <li><b>换一只怪物（如 Snake），只需换动画和参数，决策代码零改动。</b></li>
+      <li>做到这一条，说明你的 AI 与具体怪物真正解耦了 —— 这才是"商业开发流程"和"能跑就行"的分水岭。</li>
+      <li>届时再把 <code>EnemyBrain</code> 的决策内核替换为行为树，<b>现有状态类可整体复用为行为节点</b>，不会白写。</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

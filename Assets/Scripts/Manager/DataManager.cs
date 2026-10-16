@@ -19,6 +19,7 @@ namespace Emberwild.Manager
          public DataManager()
         {
             this.DataPath = "Data/Data/";
+            Load();
         }
 
         public void Init()

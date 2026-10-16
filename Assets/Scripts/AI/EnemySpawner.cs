@@ -23,14 +23,20 @@ namespace Emberwild.AI
         public float spawnRadius = 5f;
 
         private float _timer;
-        private int _currentEnemyCount = 0;
+        private readonly List<GameObject> _spawnedEnemies = new List<GameObject>();
+
 
         void Update()
         {
-            if (_currentEnemyCount >= maxEnemies) return;
+            for(int i = _spawnedEnemies.Count - 1; i >= 0; i--)
+            {
+                if (_spawnedEnemies[i] == null) _spawnedEnemies.RemoveAt(i);
+            }
+
+            if (_spawnedEnemies.Count >= maxEnemies) return;
 
             _timer += Time.deltaTime;
-            if (_timer >= spawnInterval)
+            if(_timer >= spawnInterval)
             {
                 SpawnEnemy();
                 _timer = 0f;
@@ -45,9 +51,8 @@ namespace Emberwild.AI
             Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * spawnRadius;
             Vector3 spawnPos = transform.position + new Vector3(randomCircle.x, 0, randomCircle.y);
 
-            // 实例化怪物
-            Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
-            _currentEnemyCount++;
+            GameObject go = Instantiate(enemyPrefab, spawnPos, Quaternion.identity);
+            _spawnedEnemies.Add(go);
         }
 
         void OnDrawGizmos()

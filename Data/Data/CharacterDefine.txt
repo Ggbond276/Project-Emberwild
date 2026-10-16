@@ -28,5 +28,15 @@
     "HP": 100.0,
     "AD": 10.0,
     "DEF": 10.0
+  },
+  "2001": {
+    "TID": 2001,
+    "Name": "Shell",
+    "MainType": "Monster",
+    "SubType": "Shell",
+    "Resource": "Prefabs/Monsters/Shell",
+    "HP": 100.0,
+    "AD": 10.0,
+    "DEF": 10.0
   }
 }

@@ -33,7 +33,7 @@ namespace Emberwild.Core.Test
         {
             Debug.Log("<color=yellow>--- 游戏启动流水线 开始 ---</color>");
 
-            // 1. 初始化所有无状态的全局管理器 (数据表/存档/战斗)
+            //1. 初始化所有无状态的全局管理器 (数据表/存档/战斗)
             InitGlobalManagers();
 
             // 2. 初始化底层环境数据 (如 A* 寻路网格)
