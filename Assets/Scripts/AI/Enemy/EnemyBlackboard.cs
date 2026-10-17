@@ -49,5 +49,10 @@ namespace Emberwild.AI.Enemy
         /// 上次滚动冲刺时间 (计算冷却)
         /// </summary>
         public float LastRollTime;
+
+        /// <summary>
+        /// 上次受击时间戳
+        /// </summary>
+        public float LastHitTime = -999f;
     }
 }

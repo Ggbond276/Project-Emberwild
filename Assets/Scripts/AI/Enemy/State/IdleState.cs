@@ -16,10 +16,6 @@ namespace Emberwild.AI.Enemy.State
 
         public void OnUpdate(EnemyBrain brain)
         {
-            if (brain.BB.CanSeeTarget)
-            {
-                brain.ChangeState(EnemyStateType.Chase);
-            }
         }
 
         public void OnExit(EnemyBrain brain)

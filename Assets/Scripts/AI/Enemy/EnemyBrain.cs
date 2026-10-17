@@ -1,4 +1,5 @@
-﻿using Emberwild.AI.Enemy.State;
+﻿using Emberwild.AI.BT;
+using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
 using Emberwild.Combat;
 using Emberwild.Core.AppLog;
@@ -90,9 +91,11 @@ namespace Emberwild.AI.Enemy
 
         [Tooltip("出生时进入的状态")]
         [SerializeField] private EnemyStateType _defaultState = EnemyStateType.Idle;
-
-
+        private IEnemyState _currentState;
+        private EnemyStateType _currentStateType;
+        private bool _initialized;
         public EnemyBlackboard BB { get; } = new EnemyBlackboard();
+        
 
         /// <summary>
         /// 把当前速度归一化为 0 - 1
@@ -106,12 +109,15 @@ namespace Emberwild.AI.Enemy
             }
         }
 
+        /// <summary>
+        /// 状态字典
+        /// </summary>
         private readonly Dictionary<EnemyStateType, IEnemyState> _states = new Dictionary<EnemyStateType, IEnemyState>();
 
-        private IEnemyState _currentState;
-        private EnemyStateType _currentStateType;
-        private bool _initialized;
-
+        /// <summary>
+        /// 行为树根节点 
+        /// </summary>
+        private BTNode _root;
 
         private void Awake()
         {
@@ -131,6 +137,9 @@ namespace Emberwild.AI.Enemy
             _states[EnemyStateType.RollChase] = new RollChaseState();
             _states[EnemyStateType.AttackRanged] = new AttackRangedState();
             _states[EnemyStateType.Hide] = new HideState();
+
+
+            _root = BuildTree();
         }
 
         private void Start()
@@ -155,21 +164,19 @@ namespace Emberwild.AI.Enemy
         private void OnEnable()
         {
             EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
-            EventBus.Subscribe<EnemyDiedEvent>(OnDied);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
-            EventBus.Unsubscribe<EnemyDiedEvent>(OnDied);
         }
 
         private void Update()
         {
             if (!_initialized) return;
-            _perception.Tick(BB);
-
-            _currentState?.OnUpdate(this);
+            _perception.Tick(BB); // 1. 感知改写通用数据黑板
+            _root.Evaluate(this); // 2.行为树做决策
+            _currentState?.OnUpdate(this); // 3.状态执行
         }
 
         public void ChangeState(EnemyStateType type)
@@ -200,19 +207,58 @@ namespace Emberwild.AI.Enemy
             if (evt.Victim != (ICombatEntity)_entity) return;
 
             BB.HpRatio = Entity != null ? evt.CurrentHp / Entity.MaxHp : 1f;
-
-            ChangeState(EnemyStateType.Hit);
+            BB.LastHitTime = Time.time;
         }
 
         /// <summary>
-        /// 死亡：最高有点级别 切到Dead
+        /// 构建决策树:8 个状态的优先级(从上到下,命中即停)。
+        /// 顺序:死亡 > 受击 > 缩壳 > 近战 > 滚动 > 远程 > 追击 > 待机。
         /// </summary>
-        /// <param name="evt"></param>
-        private void OnDied(EnemyDiedEvent evt)
+        private BTNode BuildTree()
         {
-            if (!_initialized) return;
-            if (evt.Victim != (ICombatEntity)_entity) return;
-            ChangeState(EnemyStateType.Dead);
+            return new Selector(
+                // 1. 死亡(最高优先级,终止)
+                new Sequence(
+                    new Condition(b => b.Entity != null && b.Entity.Attribute != null && b.Entity.Attribute.IsDead),
+                    new ActionNode(EnemyStateType.Dead)
+                ),
+                // 2. 受击硬直
+                new Sequence(
+                    new Condition(b => Time.time - b.BB.LastHitTime < b.HitStunDuration),
+                    new ActionNode(EnemyStateType.Hit)
+                ),
+                // 3. 缩壳(残血)
+                new Sequence(
+                    new Condition(b => b.BB.CanSeeTarget && b.BB.HpRatio < b.HideHpThreshold),
+                    new ActionNode(EnemyStateType.Hide)
+                ),
+                // 4. 近战
+                new Sequence(
+                    new Condition(b => b.BB.CanSeeTarget && b.BB.DistanceToTarget <= b.MeleeRange),
+                    new ActionNode(EnemyStateType.AttackMelee)
+                ),
+                // 5. 滚动冲刺(中距离 + 冷却)
+                new Sequence(
+                    new Condition(b => b.BB.CanSeeTarget
+                        && b.BB.DistanceToTarget >= b.RollMinRange && b.BB.DistanceToTarget <= b.RollMaxRange
+                        && Time.time - b.BB.LastRollTime >= b.RollCooldown),
+                    new ActionNode(EnemyStateType.RollChase)
+                ),
+                // 6. 远程攻击(中远距离 + 冷却)
+                new Sequence(
+                    new Condition(b => b.BB.CanSeeTarget
+                        && b.BB.DistanceToTarget >= b.RangedMinRange && b.BB.DistanceToTarget <= b.RangedMaxRange
+                        && Time.time - b.BB.LastAttackTime >= b.AttackCooldown),
+                    new ActionNode(EnemyStateType.AttackRanged)
+                ),
+                // 7. 追击
+                new Sequence(
+                    new Condition(b => b.BB.CanSeeTarget),
+                    new ActionNode(EnemyStateType.Chase)
+                ),
+                // 8. 待机(兜底)
+                new ActionNode(EnemyStateType.Idle)
+            );
         }
     }
 }
