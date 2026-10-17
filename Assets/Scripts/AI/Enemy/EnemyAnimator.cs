@@ -97,6 +97,15 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
+        /// 播放滚动冲刺
+        /// </summary>
+        public void SetRoll(bool roll)
+        {
+            if (_animator == null) return;
+            _animator.SetBool(_rollHash, roll);
+        }
+
+        /// <summary>
         /// 播放近战动作
         /// </summary>
         public void PlayBiteAttack()
@@ -126,15 +135,7 @@ namespace Emberwild.AI.Enemy
             _animator.SetTrigger(_castSpellHash);
         }
 
-        /// <summary>
-        /// 播放滚动冲刺
-        /// </summary>
-        public void PlayRoll()
-        {
-            if (_animator == null) return;
-            _animator.ResetTrigger(_rollHash);
-            _animator.SetTrigger(_rollHash);
-        }
+       
 
         /// <summary>
         /// 播放攻击

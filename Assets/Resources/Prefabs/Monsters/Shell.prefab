@@ -900,6 +900,17 @@ MonoBehaviour:
   _combat: {fileID: 0}
   _runSpeed: 4
   _meleeRange: 1.6
+  _hitstunDuration: 0.4
+  _rollSpeed: 8
+  _rollDuration: 1
+  _rollCooldown: 4
+  _rollMinRange: 3
+  _rollMaxRange: 7
+  _rangedMinRange: 4
+  _rangedMaxRange: 8
+  _attackCooldown: 2
+  _hideHpThreshold: 0.3
+  _hideDuration: 10
   _defaultState: 0
 --- !u!114 &3812822122396561185
 MonoBehaviour:

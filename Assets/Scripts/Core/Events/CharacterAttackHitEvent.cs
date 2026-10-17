@@ -20,15 +20,18 @@ namespace Emberwild.Core.Events
         /// </summary>
         public readonly int ComboIndex;
 
+        public readonly Vector3 TargetPosition;
+
         /// <summary>
         /// 玩家攻击事件
         /// </summary>
         /// <param name="attacker">攻击者是谁</param>
         /// <param name="comboIndex">是第几段攻击</param>
-       public CharacterAttackHitEvent(ICombatEntity attacker, int comboIndex)
+       public CharacterAttackHitEvent(ICombatEntity attacker, int comboIndex, Vector3 targetPosition = default)
         {
             Attacker = attacker;
             ComboIndex = comboIndex;
+            TargetPosition = targetPosition;
         }
     }
 }

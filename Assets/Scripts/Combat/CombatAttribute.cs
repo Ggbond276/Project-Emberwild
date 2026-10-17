@@ -22,6 +22,11 @@ namespace Emberwild.Combat
 
         public bool IsDead { get; private set; }
 
+        /// <summary>
+        /// 缩壳减伤标志
+        /// </summary>
+        public bool IsHidden { get; set; }
+
         private ICombatEntity _entity;
 
         private void Awake()
@@ -29,6 +34,13 @@ namespace Emberwild.Combat
             _entity = GetComponent<ICombatEntity>();
         }
 
+        /// <summary>
+        /// 初始化
+        /// </summary>
+        /// <param name="maxHp"></param>
+        /// <param name="currentHp"></param>
+        /// <param name="baseAD"></param>
+        /// <param name="baseDEF"></param>
         public void Initialize(float maxHp, float currentHp, float baseAD, float baseDEF)
         {
             MaxHp = maxHp;
@@ -38,9 +50,15 @@ namespace Emberwild.Combat
             IsDead = currentHp <= 0;
         }
 
+        /// <summary>
+        /// 受到伤害
+        /// </summary>
+        /// <param name="damageAmount"></param>
         public void TakeDamage(float damageAmount)
         {
             if (IsDead) return;
+
+            if (IsHidden) damageAmount *= 0.5f; // 缩壳减伤0.5f
 
             CurrentHp = Mathf.Max(0, CurrentHp - damageAmount);
             AppLog.Info("Combat", $"{gameObject.name} 受到 {damageAmount:F1} 伤害, 剩余 HP: {CurrentHp:F1}");
@@ -56,22 +74,29 @@ namespace Emberwild.Combat
             }
         }
 
+        /// <summary>
+        /// 发布死亡事件
+        /// </summary>
         private void PublishDiedEvent()
         {
             if (_entity == null) return;
             if (_entity.Faction == FactionType.Player)
                 EventBus.Publish(new CharacterDiedEvent());
             else
-                EventBus.Publish(new EnemyDiedEvent());
+                EventBus.Publish(new EnemyDiedEvent(_entity));
         }
 
+        /// <summary>
+        /// 发布受伤事件
+        /// </summary>
+        /// <param name="damage"></param>
         private void PublishDamagedEvent(float damage)
         {
             if (_entity == null) return;
             if (_entity.Faction == FactionType.Player)
                 EventBus.Publish(new CharacterDamagedEvent(damage, CurrentHp, Vector3.zero));
             else
-                EventBus.Publish(new EnemyDamagedEvent(damage, CurrentHp, Vector3.zero));
+                EventBus.Publish(new EnemyDamagedEvent(_entity, damage, CurrentHp, Vector3.zero));
         }
 
 

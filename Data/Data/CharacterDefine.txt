@@ -16,7 +16,7 @@
     "SubType": "SwordAndShield",
     "Resource": "Prefabs/Characters/MC19",
     "HP": 100.0,
-    "AD": 10.0,
+    "AD": 30.0,
     "DEF": 10.0
   },
   "1001": {

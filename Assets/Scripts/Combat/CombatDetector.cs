@@ -40,9 +40,14 @@ namespace Emberwild.Combat
                 return;
             }
 
-            Vector3 center = attacker.Transform.position + attacker.Transform.forward * atkDefine.OffsetZ;
+            // 计算伤害中心 远程攻击(TargetPosition != zero)以目标点为中心;近战以 forward*OffsetZ 为中
+            Vector3 center = evt.TargetPosition != Vector3.zero ? evt.TargetPosition : attacker.Transform.position + attacker.Transform.forward * atkDefine.OffsetZ;
+
+            // 计算攻击目标层级
             int targetMask = GetTargetLayer(attacker.Faction);
+            // 获取攻击目标
             Collider[] hits = PerformPhysicsOverlap(center, attacker.Transform, atkDefine, targetMask);
+            // 对攻击目标执行伤害
             ProcessHits(hits, attackerAttr, atkDefine, center, attacker.Transform.forward);
         }
 

@@ -102,7 +102,8 @@ namespace Emberwild.Core.Test
                 return;
             }
 
-            _playerObj = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            Vector3 location = new Vector3(18, 1, 16);
+            _playerObj = Instantiate(prefab, location, Quaternion.identity);
             _playerObj.name = define.Name;
 
             _characterAnimator = _playerObj.GetComponent<CharacterAnimator>();

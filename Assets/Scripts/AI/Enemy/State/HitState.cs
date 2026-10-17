@@ -25,7 +25,6 @@ namespace Emberwild.AI.Enemy.State
             if(Time.time >= _hitEndTime)
             {
                 brain.ChangeState(brain.BB.CanSeeTarget ? EnemyStateType.Chase : EnemyStateType.Idle);
-
             }
         }
 

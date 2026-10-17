@@ -84,6 +84,20 @@ namespace Emberwild.AI.Pathfinding
             _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
         }
 
+        public void SetDirectVelocity(Vector3 direction, float speed)
+        {
+            if (_rb == null) return;
+
+            Vector3 dir = direction;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.0001f) return;
+            dir.Normalize();
+
+            _rb.angularVelocity = Vector3.zero;
+            _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
+            _rb.velocity = new Vector3(dir.x * speed, _rb.velocity.y, dir.z * speed);
+        }
+
         void FixedUpdate()
         {
             if (!_hasDestination) return;

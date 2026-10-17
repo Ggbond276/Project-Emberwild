@@ -39,6 +39,9 @@ namespace Emberwild.AI.Enemy
             if (_entity == null) _entity = GetComponent<EnemyEntity>();
         }
 
+        /// <summary>
+        /// AI 决策层调用：发动一次近战攻击
+        /// </summary>
         public void DoAttack()
         {
             if (IsAttacking) return;
@@ -47,6 +50,20 @@ namespace Emberwild.AI.Enemy
             EventBus.Publish(new CharacterAttackHitEvent(_entity, ComboIndex));
             AppLog.Info("Combat", $"{name} 发起近战攻击 combo={ComboIndex}");
 
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="targetPos"></param>
+        public void DoRangedAttack(Vector3 targetPos)
+        {
+            if (IsAttacking) return;
+
+            _attackEndTime = Time.time + _attackDuration;
+            _animator?.PlayProjectileAttack();
+            EventBus.Publish(new CharacterAttackHitEvent(_entity, 1, targetPos));
+            AppLog.Info("Combat", $"{name} 发起远程攻击 target={targetPos}");
         }
 
     }

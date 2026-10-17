@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Emberwild.Combat;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,11 @@ namespace Emberwild.Core.Events
     /// </summary>
     public readonly struct EnemyDiedEvent : IEvent
     {
+        public readonly ICombatEntity Victim;
 
+        public EnemyDiedEvent(ICombatEntity victim)
+        {
+            Victim = victim;
+        }
     }
 }

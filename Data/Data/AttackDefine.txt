@@ -48,5 +48,15 @@
     "Param1": 1.0,
     "Param2": 2.5,
     "Knockback": 2.0
+  },
+  "2002": {
+    "ComboGroup": "Shell",
+    "ComboIndex": 1,
+    "DmgRate": 0.8,
+    "HitboxType": 1,
+    "OffsetZ": 0.0,
+    "Param1": 1.5,
+    "Param2": 0.0,
+    "Knockback": 1.0
   }
 }

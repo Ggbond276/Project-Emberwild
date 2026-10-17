@@ -13,5 +13,8 @@ namespace Emberwild.AI.Enemy.State
         AttackMelee, // 近战攻击
         Hit,
         Dead,
+        RollChase, // 滚动冲刺
+        AttackRanged, // 远程攻击
+        Hide, // 缩壳防御
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
+using Emberwild.Combat;
 using Emberwild.Core.AppLog;
 using Emberwild.Core.Events;
 using System;
@@ -46,9 +47,45 @@ namespace Emberwild.AI.Enemy
         [Tooltip("受击硬直时长(秒)")]
         [SerializeField] private float _hitstunDuration = 0.4f;
 
+        [Header("滚动参数")]
+        [Tooltip("滚动冲刺的速度(米/秒)")]
+        [SerializeField] private float _rollSpeed = 8f;
+        [Tooltip("滚动冲刺的持续时长(秒)")]
+        [SerializeField] private float _rollDuration = 1f;
+        [Tooltip("滚动冷却(秒)")]
+        [SerializeField] private float _rollCooldown = 4f;
+        [Tooltip("触发滚动的最小距离(米)")]
+        [SerializeField] private float _rollMinRange = 3f;
+        [Tooltip("触发滚动的最大距离(米)")]
+        [SerializeField] private float _rollMaxRange = 7f;
+        
+        [Header("远程攻击参数")]
+        [Tooltip("远程攻击最小距离(米)")]
+        [SerializeField] private float _rangedMinRange = 4f;
+        [Tooltip("远程攻击最大距离(米)")]
+        [SerializeField] private float _rangedMaxRange = 8f;
+        [Tooltip("远程攻击冷却(秒)")]
+        [SerializeField] private float _attackCooldown = 2f;
+
+        [Header("缩壳防御参数")]
+        [Tooltip("触发缩壳的血量比例阈值(0~1)")]
+        [SerializeField] private float _hideHpThreshold = 0.3f;
+        [Tooltip("缩壳持续时长(秒)")]
+        [SerializeField] private float _hideDuration = 10f;
+
         public float RunSpeed => _runSpeed;
         public float MeleeRange => _meleeRange;
         public float HitStunDuration => _hitstunDuration;
+         public float RollSpeed => _rollSpeed;
+        public float RollDuration => _rollDuration;
+        public float RollCooldown => _rollCooldown;
+        public float RollMinRange => _rollMinRange;
+        public float RollMaxRange => _rollMaxRange;
+        public float RangedMinRange => _rangedMinRange;
+        public float RangedMaxRange => _rangedMaxRange;
+        public float AttackCooldown => _attackCooldown;
+        public float HideHpThreshold => _hideHpThreshold;
+        public float HideDuration => _hideDuration;
 
 
         [Tooltip("出生时进入的状态")]
@@ -91,6 +128,9 @@ namespace Emberwild.AI.Enemy
             _states[EnemyStateType.AttackMelee] = new AttackMeleeState();
             _states[EnemyStateType.Hit] = new HitState();
             _states[EnemyStateType.Dead] = new DeadState();
+            _states[EnemyStateType.RollChase] = new RollChaseState();
+            _states[EnemyStateType.AttackRanged] = new AttackRangedState();
+            _states[EnemyStateType.Hide] = new HideState();
         }
 
         private void Start()
@@ -157,6 +197,10 @@ namespace Emberwild.AI.Enemy
         private void OnDamaged(EnemyDamagedEvent evt)
         {
             if (!_initialized) return;
+            if (evt.Victim != (ICombatEntity)_entity) return;
+
+            BB.HpRatio = Entity != null ? evt.CurrentHp / Entity.MaxHp : 1f;
+
             ChangeState(EnemyStateType.Hit);
         }
 
@@ -167,6 +211,7 @@ namespace Emberwild.AI.Enemy
         private void OnDied(EnemyDiedEvent evt)
         {
             if (!_initialized) return;
+            if (evt.Victim != (ICombatEntity)_entity) return;
             ChangeState(EnemyStateType.Dead);
         }
     }

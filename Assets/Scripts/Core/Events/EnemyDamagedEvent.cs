@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Emberwild.Combat;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,8 @@ namespace Emberwild.Core.Events
 {
     public readonly struct EnemyDamagedEvent : IEvent 
     {
+
+        public readonly ICombatEntity Victim;
         /// <summary>
         /// 实际扣血量
         /// </summary>
@@ -21,8 +24,9 @@ namespace Emberwild.Core.Events
         /// </summary>
         public readonly UnityEngine.Vector3 FromDirection;
 
-        public EnemyDamagedEvent(float damage, float currentHp, UnityEngine.Vector3 fromDirection)
+        public EnemyDamagedEvent(ICombatEntity victim, float damage, float currentHp, UnityEngine.Vector3 fromDirection)
         {
+            Victim = victim;
             Damage = damage;
             CurrentHp = currentHp;
             FromDirection = fromDirection;
