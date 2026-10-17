@@ -6,10 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace Emberwild.AI.Enemy
+namespace Emberwild.AI.Enemy.EnemyAnimator
 {
     [DisallowMultipleComponent]
-    public class EnemyAnimator : MonoBehaviour
+    public class ShellAnimator : MonoBehaviour, IEnemyAnimator
     {
         [Header("引用")]
         [Tooltip("怪物 Animator(挂在怪物 GameObject 上)")]
@@ -18,8 +18,6 @@ namespace Emberwild.AI.Enemy
         [Header("Float 参数名")]
         [SerializeField] private string _speedParameter = "Speed";
         
-
-
         [Header("Bool 参数名")]
         [SerializeField] private string _isDeadParameter = "IsDead";
         [SerializeField] private string _isHiddenParameter = "IsHidden";
@@ -108,7 +106,7 @@ namespace Emberwild.AI.Enemy
         /// <summary>
         /// 播放近战动作
         /// </summary>
-        public void PlayBiteAttack()
+        public void PlayAttack()
         {
             if (_animator == null) return;
             _animator.ResetTrigger(_attackHash);
@@ -118,24 +116,12 @@ namespace Emberwild.AI.Enemy
         /// <summary>
         /// 播放远程攻击
         /// </summary>
-        public void PlayProjectileAttack()
+        public void PlayRangedAttack()
         {
             if (_animator == null) return;
             _animator.ResetTrigger(_projectileAttackHash);
             _animator.SetTrigger(_projectileAttackHash);
         }
-
-        /// <summary>
-        /// 播放施法
-        /// </summary>
-        public void PlayCastSpell()
-        {
-            if (_animator == null) return;
-            _animator.ResetTrigger(_castSpellHash);
-            _animator.SetTrigger(_castSpellHash);
-        }
-
-       
 
         /// <summary>
         /// 播放攻击

@@ -1,4 +1,5 @@
 ﻿using Emberwild.AI.BT;
+using Emberwild.AI.Enemy.EnemyAnimator;
 using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
 using Emberwild.Combat;
@@ -28,65 +29,24 @@ namespace Emberwild.AI.Enemy
         [Header("组件引用")]
         [SerializeField] private CustomNavAgent _agent; // 腿
         [SerializeField] private EnemyPerception _perception; // 眼睛
-        [SerializeField] private EnemyAnimator _animator; // 动画
         [SerializeField] private EnemyEntity _entity; // 数据
         [SerializeField] private EnemyCombat _combat; // 手
 
+        [SerializeField] private EnemyAIConfig _config;          // 配置(每怪一份)
+        [SerializeField] private MonoBehaviour _animator;        // 挂 ShellAnimator/WolfAnimator(实现 IEnemyAnimator)
 
         public CustomNavAgent Agent => _agent;
         public EnemyPerception Perception => _perception;
-        public EnemyAnimator Animator => _animator;
+        public IEnemyAnimator Animator => _animator as IEnemyAnimator ?? NullEnemyAnimator.Instance;
         public EnemyEntity Entity => _entity;
         public EnemyCombat Combat => _combat;
 
 
-        [Header("决策参数")]
-        [Tooltip("奔跑速度。必须与 CustomNavAgent.moveSpeed 一致,用于把实际速度归一化成 0~1")]
-        [SerializeField] private float _runSpeed = 4f;
-        [Tooltip("近战攻击触发距离(米)")]
-        [SerializeField] private float _meleeRange = 1.6f;
-        [Tooltip("受击硬直时长(秒)")]
-        [SerializeField] private float _hitstunDuration = 0.4f;
-
-        [Header("滚动参数")]
-        [Tooltip("滚动冲刺的速度(米/秒)")]
-        [SerializeField] private float _rollSpeed = 8f;
-        [Tooltip("滚动冲刺的持续时长(秒)")]
-        [SerializeField] private float _rollDuration = 1f;
-        [Tooltip("滚动冷却(秒)")]
-        [SerializeField] private float _rollCooldown = 4f;
-        [Tooltip("触发滚动的最小距离(米)")]
-        [SerializeField] private float _rollMinRange = 3f;
-        [Tooltip("触发滚动的最大距离(米)")]
-        [SerializeField] private float _rollMaxRange = 7f;
-        
-        [Header("远程攻击参数")]
-        [Tooltip("远程攻击最小距离(米)")]
-        [SerializeField] private float _rangedMinRange = 4f;
-        [Tooltip("远程攻击最大距离(米)")]
-        [SerializeField] private float _rangedMaxRange = 8f;
-        [Tooltip("远程攻击冷却(秒)")]
-        [SerializeField] private float _attackCooldown = 2f;
-
-        [Header("缩壳防御参数")]
-        [Tooltip("触发缩壳的血量比例阈值(0~1)")]
-        [SerializeField] private float _hideHpThreshold = 0.3f;
-        [Tooltip("缩壳持续时长(秒)")]
-        [SerializeField] private float _hideDuration = 10f;
-
-        public float RunSpeed => _runSpeed;
-        public float MeleeRange => _meleeRange;
-        public float HitStunDuration => _hitstunDuration;
-         public float RollSpeed => _rollSpeed;
-        public float RollDuration => _rollDuration;
-        public float RollCooldown => _rollCooldown;
-        public float RollMinRange => _rollMinRange;
-        public float RollMaxRange => _rollMaxRange;
-        public float RangedMinRange => _rangedMinRange;
-        public float RangedMaxRange => _rangedMaxRange;
-        public float AttackCooldown => _attackCooldown;
-        public float HideHpThreshold => _hideHpThreshold;
-        public float HideDuration => _hideDuration;
+        public float RunSpeed => _config != null ? _config.runSpeed : 4f;
+        public float RollSpeed => _config != null ? _config.rollSpeed : 8f;
+        public float RollDuration => _config != null ? _config.rollDuration : 1f;
+        public float HitStunDuration => _config != null ? _config.hitstunDuration : 0.4f;
+        public float HideDuration => _config != null ? _config.hideDuration : 10f;
 
 
         private IEnemyState _currentState;
@@ -102,8 +62,8 @@ namespace Emberwild.AI.Enemy
         {
             get
             {
-                if (_agent == null || _runSpeed <= 0.01f) return 0f;
-                return Mathf.Clamp01(_agent.VelocityMagnitude / _runSpeed);
+                if (_agent == null || RunSpeed <= 0.01f) return 0f;
+                return Mathf.Clamp01(_agent.VelocityMagnitude / RunSpeed);
             }
         }
 
@@ -122,22 +82,51 @@ namespace Emberwild.AI.Enemy
             // 自动补齐引用(减少 Inspector 手拖出错)
             if (_agent == null) _agent = GetComponent<CustomNavAgent>();
             if (_perception == null) _perception = GetComponent<EnemyPerception>();
-            if (_animator == null) _animator = GetComponent<EnemyAnimator>();
+            if (_animator == null) _animator = FindAnimator();
             if (_entity == null) _entity = GetComponent<EnemyEntity>();
             if (_combat == null) _combat = GetComponent<EnemyCombat>();
+            if (_config != null)
+            {
+                // 注入感知/移动/战斗参数(判空,避免缺组件时 Awake 直接崩)
+                if (_perception != null) _perception.Configure(_config.viewRange, _config.loseTargetRange, _config.scanInterval);
+                if (_agent != null)
+                {
+                    _agent.moveSpeed = _config.runSpeed;
+                    _agent.turnSpeed = _config.turnSpeed;
+                    _agent.stoppingDistance = _config.stoppingDistance;
+                }
+                if (_combat != null) _combat.Configure(_config.attackDuration);
+            }
 
-            // 注册状态(新增状态就在这里加一行)
-            _states[EnemyStateType.Idle] = new IdleState();
-            _states[EnemyStateType.Chase] = new ChaseState();
-            _states[EnemyStateType.AttackMelee] = new AttackMeleeState();
-            _states[EnemyStateType.Hit] = new HitState();
-            _states[EnemyStateType.Dead] = new DeadState();
-            _states[EnemyStateType.RollChase] = new RollChaseState();
-            _states[EnemyStateType.AttackRanged] = new AttackRangedState();
-            _states[EnemyStateType.Hide] = new HideState();
+            // 用工厂创建所有状态(新状态只需在工厂注册)
+            foreach (EnemyStateType type in Enum.GetValues(typeof(EnemyStateType)))
+            {
+                var state = EnemyStateFactory.Create(type);
+                if (state != null) _states[type] = state;
+            }
 
+            // 从配置构建行为树
+            if (_config != null)
+            {
+                _root = BTBuilder.Build(_config.decisionTree);
+            }
+            else
+            {
+                AppLog.Error("Enemy", "EnemyBrain: 未配置 EnemyAIConfig");
+                enabled = false;
+            }
+        }
 
-            _root = BuildTree();
+        /// <summary>
+        /// 在自身组件中查找第一个实现 IEnemyAnimator 的组件(接口类型无法用 GetComponent 泛型直接查询)。
+        /// </summary>
+        private MonoBehaviour FindAnimator()
+        {
+            foreach (var mb in GetComponents<MonoBehaviour>())
+            {
+                if (mb is IEnemyAnimator) return mb;
+            }
+            return null;
         }
 
         private void Start()
@@ -223,57 +212,6 @@ namespace Emberwild.AI.Enemy
             if (!_initialized) return;
             if (evt.Victim != (ICombatEntity)_entity) return;
             ChangeState(EnemyStateType.Dead);
-        }
-
-        /// <summary>
-        /// 构建决策树:8 个状态的优先级(从上到下,命中即停)。
-        /// 顺序:死亡 > 受击 > 缩壳 > 近战 > 滚动 > 远程 > 追击 > 待机。
-        /// </summary>
-        private BTNode BuildTree()
-        {
-            return new Selector(
-                // 1. 死亡(最高优先级,终止)
-                new Sequence(
-                    new Condition(b => b.Entity != null && b.Entity.Attribute != null && b.Entity.Attribute.IsDead),
-                    new ActionNode(EnemyStateType.Dead)
-                ),
-                // 2. 受击硬直
-                new Sequence(
-                    new Condition(b => Time.time - b.BB.LastHitTime < b.HitStunDuration),
-                    new ActionNode(EnemyStateType.Hit)
-                ),
-                // 3. 缩壳(残血,仅一次)
-                new Sequence(
-                    new Condition(b => !b.BB.HasHidden && b.BB.CanSeeTarget && b.BB.HpRatio < b.HideHpThreshold),
-                    new ActionNode(EnemyStateType.Hide)
-                ),
-                // 4. 近战
-                new Sequence(
-                    new Condition(b => b.BB.CanSeeTarget && b.BB.DistanceToTarget <= b.MeleeRange),
-                    new ActionNode(EnemyStateType.AttackMelee)
-                ),
-                // 5. 滚动冲刺(中距离 + 冷却)
-                new Sequence(
-                    new Condition(b => b.BB.CanSeeTarget
-                        && b.BB.DistanceToTarget >= b.RollMinRange && b.BB.DistanceToTarget <= b.RollMaxRange
-                        && Time.time - b.BB.LastRollTime >= b.RollCooldown),
-                    new ActionNode(EnemyStateType.RollChase)
-                ),
-                // 6. 远程攻击(中远距离 + 冷却)
-                new Sequence(
-                    new Condition(b => b.BB.CanSeeTarget
-                        && b.BB.DistanceToTarget >= b.RangedMinRange && b.BB.DistanceToTarget <= b.RangedMaxRange
-                        && Time.time - b.BB.LastAttackTime >= b.AttackCooldown),
-                    new ActionNode(EnemyStateType.AttackRanged)
-                ),
-                // 7. 追击
-                new Sequence(
-                    new Condition(b => b.BB.CanSeeTarget),
-                    new ActionNode(EnemyStateType.Chase)
-                ),
-                // 8. 待机(兜底)
-                new ActionNode(EnemyStateType.Idle)
-            );
         }
     }
 }

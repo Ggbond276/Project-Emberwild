@@ -895,22 +895,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _agent: {fileID: 0}
   _perception: {fileID: 0}
-  _animator: {fileID: 0}
   _entity: {fileID: 0}
   _combat: {fileID: 0}
-  _runSpeed: 4
-  _meleeRange: 1.6
-  _hitstunDuration: 0.4
-  _rollSpeed: 8
-  _rollDuration: 1
-  _rollCooldown: 4
-  _rollMinRange: 3
-  _rollMaxRange: 7
-  _rangedMinRange: 4
-  _rangedMaxRange: 8
-  _attackCooldown: 2
-  _hideHpThreshold: 0.3
-  _hideDuration: 2
+  _config: {fileID: 11400000, guid: c358ed5983faaf04d83eaf6d7a3392fd, type: 2}
 --- !u!114 &3812822122396561185
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -923,7 +910,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ea222553d2305f47845e02dbfc0e116, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _animator: {fileID: 0}
   _entity: {fileID: 0}
   _attackDuration: 0.6
 --- !u!1 &6326956281371527221

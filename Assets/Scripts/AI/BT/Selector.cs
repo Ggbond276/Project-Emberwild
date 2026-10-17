@@ -30,5 +30,15 @@ namespace Emberwild.AI.BT
 
             return NodeState.Failure;
         }
+
+        /// <summary>
+        /// 添加子节点
+        /// </summary>
+        /// <param name="child"></param>
+        public void Add(BTNode child)
+        {
+            _children.Add(child);
+        }
+
     }
 }

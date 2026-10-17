@@ -26,5 +26,12 @@ namespace Emberwild.AI.BT
             }
             return NodeState.Success;
         }
+
+
+        public void Add(BTNode child)
+        {
+            _children.Add(child);
+        }
+
     }
 }

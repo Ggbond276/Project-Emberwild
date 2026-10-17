@@ -66,6 +66,19 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
+        /// 外部调用可注入配置
+        /// </summary>
+        /// <param name="sightRange"></param>
+        /// <param name="loseTargetRange"></param>
+        /// <param name="scanInterval"></param>
+        public void Configure(float sightRange, float loseTargetRange, float scanInterval)
+        {
+            _sightRange = sightRange;
+            _loseTargetRange = loseTargetRange;
+            _scanInterval = scanInterval;
+        }
+
+        /// <summary>
         /// 编辑器可视化 ：黄圈 = 视野;  蓝圈 = 丢失目标
         /// </summary>
         private void OnDrawGizmosSelected()
