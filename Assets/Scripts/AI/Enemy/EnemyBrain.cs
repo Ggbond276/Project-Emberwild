@@ -89,8 +89,6 @@ namespace Emberwild.AI.Enemy
         public float HideDuration => _hideDuration;
 
 
-        [Tooltip("出生时进入的状态")]
-        [SerializeField] private EnemyStateType _defaultState = EnemyStateType.Idle;
         private IEnemyState _currentState;
         private EnemyStateType _currentStateType;
         private bool _initialized;
@@ -158,22 +156,28 @@ namespace Emberwild.AI.Enemy
             }
 
             _initialized = true;
-            ChangeState(_defaultState);
+            // 初始状态由行为树第一帧决策,无需手动 ChangeState
         }
 
         private void OnEnable()
         {
             EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
+            EventBus.Subscribe<EnemyDiedEvent>(OnDied);
         }
 
         private void OnDisable()
         {
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
+            EventBus.Unsubscribe<EnemyDiedEvent>(OnDied);
         }
 
         private void Update()
         {
             if (!_initialized) return;
+
+            // 死亡后短路:不再感知、不再决策、不再执行
+            if (_currentStateType == EnemyStateType.Dead) return;
+
             _perception.Tick(BB); // 1. 感知改写通用数据黑板
             _root.Evaluate(this); // 2.行为树做决策
             _currentState?.OnUpdate(this); // 3.状态执行
@@ -211,6 +215,17 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
+        /// 死亡:0 帧立即切 Dead(最高优先级、不可逆)。
+        /// 行为树里的 IsDead 条件保留作兜底(万一事件未触发)。
+        /// </summary>
+        private void OnDied(EnemyDiedEvent evt)
+        {
+            if (!_initialized) return;
+            if (evt.Victim != (ICombatEntity)_entity) return;
+            ChangeState(EnemyStateType.Dead);
+        }
+
+        /// <summary>
         /// 构建决策树:8 个状态的优先级(从上到下,命中即停)。
         /// 顺序:死亡 > 受击 > 缩壳 > 近战 > 滚动 > 远程 > 追击 > 待机。
         /// </summary>
@@ -227,9 +242,9 @@ namespace Emberwild.AI.Enemy
                     new Condition(b => Time.time - b.BB.LastHitTime < b.HitStunDuration),
                     new ActionNode(EnemyStateType.Hit)
                 ),
-                // 3. 缩壳(残血)
+                // 3. 缩壳(残血,仅一次)
                 new Sequence(
-                    new Condition(b => b.BB.CanSeeTarget && b.BB.HpRatio < b.HideHpThreshold),
+                    new Condition(b => !b.BB.HasHidden && b.BB.CanSeeTarget && b.BB.HpRatio < b.HideHpThreshold),
                     new ActionNode(EnemyStateType.Hide)
                 ),
                 // 4. 近战

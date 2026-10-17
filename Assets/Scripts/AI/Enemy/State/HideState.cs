@@ -14,6 +14,7 @@ namespace Emberwild.AI.Enemy.State
         public void OnEnter(EnemyBrain brain)
         {
             _hideEndTime = Time.time + brain.HideDuration;
+            brain.BB.HasHidden = true;   // 缩过一次壳就不再缩
 
             brain.Agent.Stop();
             brain.Animator.SetMoveSpeed(0f);

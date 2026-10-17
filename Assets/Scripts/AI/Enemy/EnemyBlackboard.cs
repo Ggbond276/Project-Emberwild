@@ -54,5 +54,10 @@ namespace Emberwild.AI.Enemy
         /// 上次受击时间戳
         /// </summary>
         public float LastHitTime = -999f;
+
+        /// <summary>
+        /// 本次战斗是否已缩壳过(一次性标志,避免出壳后反复缩壳)
+        /// </summary>
+        public bool HasHidden;
     }
 }

@@ -910,8 +910,7 @@ MonoBehaviour:
   _rangedMaxRange: 8
   _attackCooldown: 2
   _hideHpThreshold: 0.3
-  _hideDuration: 10
-  _defaultState: 0
+  _hideDuration: 2
 --- !u!114 &3812822122396561185
 MonoBehaviour:
   m_ObjectHideFlags: 0
