@@ -113,7 +113,13 @@ namespace Emberwild.Combat
                 }
 
                 float finalDamage = DamageCalculator.Calculate(attackerAttr, defenderAttr, atkDefine.DmgRate);
-                defenderAttr.TakeDamage(finalDamage);
+
+                // 计算攻击来向 从受害者指向命中点， 压平Y用于水平击退
+                Vector3 fromDir = center - defenderAttr.transform.position;
+                fromDir.y = 0f;
+                if (fromDir.sqrMagnitude > 0.0001) fromDir.Normalize();
+
+                defenderAttr.TakeDamage(finalDamage, center, fromDir);
             }
         }
 

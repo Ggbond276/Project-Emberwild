@@ -53,8 +53,10 @@ namespace Emberwild.Combat
         /// <summary>
         /// 受到伤害
         /// </summary>
-        /// <param name="damageAmount"></param>
-        public void TakeDamage(float damageAmount)
+        /// <param name="damageAmount">受到的伤害是多少</param>
+        /// <param name="hitPoint">攻击发起点</param>
+        /// <param name="fromDirection">伤害来自哪个方向</param>
+        public void TakeDamage(float damageAmount, Vector3 hitPoint, Vector3 fromDirection)
         {
             if (IsDead) return;
 
@@ -70,7 +72,7 @@ namespace Emberwild.Combat
                 AppLog.Info("Combat", $"{gameObject.name} 死亡");
             } else
             {
-                PublishDamagedEvent(damageAmount);
+                PublishDamagedEvent(damageAmount, hitPoint, fromDirection);
             }
         }
 
@@ -90,13 +92,13 @@ namespace Emberwild.Combat
         /// 发布受伤事件
         /// </summary>
         /// <param name="damage"></param>
-        private void PublishDamagedEvent(float damage)
+        private void PublishDamagedEvent(float damage, Vector3 hitPoint, Vector3 fromDirection)
         {
             if (_entity == null) return;
             if (_entity.Faction == FactionType.Player)
-                EventBus.Publish(new CharacterDamagedEvent(damage, CurrentHp, Vector3.zero));
+                EventBus.Publish(new CharacterDamagedEvent(damage, CurrentHp, fromDirection, hitPoint));
             else
-                EventBus.Publish(new EnemyDamagedEvent(_entity, damage, CurrentHp, Vector3.zero));
+                EventBus.Publish(new EnemyDamagedEvent(_entity, damage, CurrentHp, fromDirection, hitPoint));
         }
 
 

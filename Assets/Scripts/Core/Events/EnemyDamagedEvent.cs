@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace Emberwild.Core.Events
 {
@@ -22,14 +23,20 @@ namespace Emberwild.Core.Events
         /// <summary>
         /// 收到攻击的方向
         /// </summary>
-        public readonly UnityEngine.Vector3 FromDirection;
+        public readonly Vector3 FromDirection;
 
-        public EnemyDamagedEvent(ICombatEntity victim, float damage, float currentHp, UnityEngine.Vector3 fromDirection)
+        /// <summary>
+        /// 攻击命中点，特效生成位置
+        /// </summary>
+        public readonly Vector3 HitPoint;
+
+        public EnemyDamagedEvent(ICombatEntity victim, float damage, float currentHp, Vector3 fromDirection, Vector3 hitPoint)
         {
             Victim = victim;
             Damage = damage;
             CurrentHp = currentHp;
             FromDirection = fromDirection;
+            HitPoint = hitPoint;
         }
     }
 }
