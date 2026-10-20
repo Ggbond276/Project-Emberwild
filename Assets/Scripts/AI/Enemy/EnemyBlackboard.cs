@@ -59,5 +59,13 @@ namespace Emberwild.AI.Enemy
         /// 本次战斗是否已缩壳过(一次性标志,避免出壳后反复缩壳)
         /// </summary>
         public bool HasHidden;
+
+
+        public float LastHeavyTime;
+        public float LastPounceTime;
+        public float LastLeapTime;
+        public float LastRangedTime;
+        public float LastSpellTime;
+        public bool HasAlerted;
     }
 }

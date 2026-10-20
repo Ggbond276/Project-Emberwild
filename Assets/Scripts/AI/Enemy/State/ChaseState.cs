@@ -11,7 +11,7 @@ namespace Emberwild.AI.Enemy.State
     {
         public void OnEnter(EnemyBrain brain)
         {
-            // 进入追击无需特殊动作
+            brain.Agent.SetMotionLocked(false);
         }
 
         public void OnUpdate(EnemyBrain brain)

@@ -58,5 +58,65 @@
     "Param1": 1.5,
     "Param2": 0.0,
     "Knockback": 1.0
+  },
+  "2101": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 0,
+    "DmgRate": 1.0,
+    "HitboxType": 2,
+    "OffsetZ": 1.4,
+    "Param1": 1.6,
+    "Param2": 2.2,
+    "Knockback": 2.0
+  },
+  "2102": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 1,
+    "DmgRate": 1.8,
+    "HitboxType": 2,
+    "OffsetZ": 1.5,
+    "Param1": 2.4,
+    "Param2": 2.6,
+    "Knockback": 4.0
+  },
+  "2103": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 2,
+    "DmgRate": 1.4,
+    "HitboxType": 2,
+    "OffsetZ": 2.0,
+    "Param1": 1.8,
+    "Param2": 3.2,
+    "Knockback": 3.0
+  },
+  "2104": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 3,
+    "DmgRate": 1.2,
+    "HitboxType": 2,
+    "OffsetZ": 2.2,
+    "Param1": 2.0,
+    "Param2": 3.6,
+    "Knockback": 3.0
+  },
+  "2105": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 4,
+    "DmgRate": 0.8,
+    "HitboxType": 1,
+    "OffsetZ": 0.0,
+    "Param1": 1.5,
+    "Param2": 0.0,
+    "Knockback": 1.0
+  },
+  "2106": {
+    "ComboGroup": "Werewolf",
+    "ComboIndex": 5,
+    "DmgRate": 0.5,
+    "HitboxType": 1,
+    "OffsetZ": 0.0,
+    "Param1": 4.0,
+    "Param2": 0.0,
+    "Knockback": 0.0
   }
 }

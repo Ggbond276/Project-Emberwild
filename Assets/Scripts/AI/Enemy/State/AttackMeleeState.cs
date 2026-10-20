@@ -11,7 +11,7 @@ namespace Emberwild.AI.Enemy.State
     {
         public void OnEnter(EnemyBrain brain)
         {
-            brain.Agent.Stop();
+            brain.Agent.SetMotionLocked(true);
             brain.Animator.SetMoveSpeed(0f);
 
             // 攻击前先面向玩家:玩家在攻击范围内移动时,保证判定框正对目标,避免空攻击
@@ -35,7 +35,7 @@ namespace Emberwild.AI.Enemy.State
 
         public void OnExit(EnemyBrain brain)
         {
-            // 无需清理
+            brain.Agent.SetMotionLocked(false);
         }
     }
 }

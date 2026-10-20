@@ -23,6 +23,11 @@ MonoBehaviour:
   rollSpeed: 8
   rollDuration: 1
   hideDuration: 10
+  attackActions:
+  - action: 0
+    comboIndex: 0
+  - action: 4
+    comboIndex: 1
   decisionTree:
   - type: 1
     condition: 0

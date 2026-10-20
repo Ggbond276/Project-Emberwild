@@ -4,12 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using Emberwild.AI.Enemy.EAnimator;
 
 namespace Emberwild.AI.Enemy.State
 {
-    /// <summary>
-    /// 滚动冲刺状态：朝向玩家直线高速突进，持续一段时间后回归Chase/Idle
-    /// </summary>
+    /// <summary>滚动冲刺：朝目标直线高速突进，持续一段时间后转 Chase / Idle。</summary>
     public class RollChaseState : IEnemyState
     {
         private float _rollEndTime;
@@ -17,19 +16,20 @@ namespace Emberwild.AI.Enemy.State
 
         public void OnEnter(EnemyBrain brain)
         {
-            brain.Agent.Stop();
-            //TODO
-            brain.Animator.SetRoll(true);
+            brain.Agent.SetMotionLocked(false);
+            brain.Animator.SetState(EnemyStateFlag.Dash, true);
+
             brain.BB.LastRollTime = Time.time;
             _rollEndTime = Time.time + brain.RollDuration;
 
             var target = brain.BB.Target;
-            if(target != null)
+            if (target != null)
             {
                 Vector3 dir = target.position - brain.transform.position;
                 dir.y = 0;
                 _rollDir = dir.sqrMagnitude > 0.0001f ? dir.normalized : brain.transform.forward;
-            } else
+            }
+            else
             {
                 _rollDir = brain.transform.forward;
             }
@@ -43,14 +43,12 @@ namespace Emberwild.AI.Enemy.State
                 return;
             }
             brain.Agent.SetDirectVelocity(_rollDir, brain.RollSpeed);
-            
         }
 
         public void OnExit(EnemyBrain brain)
         {
             brain.Agent.Stop();
-            //TODO
-            brain.Animator.SetRoll(false);
+            brain.Animator.SetState(EnemyStateFlag.Dash, false);
         }
     }
 }

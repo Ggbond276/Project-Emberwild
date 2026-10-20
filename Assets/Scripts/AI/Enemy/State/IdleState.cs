@@ -10,7 +10,7 @@ namespace Emberwild.AI.Enemy.State
     {
         public void OnEnter(EnemyBrain brain)
         {
-            brain.Agent.Stop();
+            brain.Agent.SetMotionLocked(true);
             brain.Animator.SetMoveSpeed(0f);
         }
 
@@ -20,7 +20,7 @@ namespace Emberwild.AI.Enemy.State
 
         public void OnExit(EnemyBrain brain)
         {
-            // 待机无需清理
+            brain.Agent.SetMotionLocked(false);
         }
 
 

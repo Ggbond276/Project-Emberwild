@@ -1,5 +1,5 @@
 ﻿using Emberwild.AI.BT;
-using Emberwild.AI.Enemy.EnemyAnimator;
+using Emberwild.AI.Enemy.EAnimator;
 using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
 using Emberwild.Combat;
@@ -49,6 +49,15 @@ namespace Emberwild.AI.Enemy
         public float HideDuration => _config != null ? _config.hideDuration : 10f;
 
 
+        public float HeavyAttackDuration => _config != null ? _config.heavyAttackDuration : 0.9f;
+        public float PounceSpeed => _config != null ? _config.pounceSpeed : 11f;
+        public float PounceDuration => _config != null ? _config.pounceDuration : 0.35f;
+        public float LeapSpeed => _config != null ? _config.leapSpeed : 8f;
+        public float LeapDuration => _config != null ? _config.leapDuration : 0.6f;
+        public float SpellDuration => _config != null ? _config.spellDuration : 1.2f;
+        public float AlertDuration => _config != null ? _config.alertDuration : 0.8f;
+
+
         private IEnemyState _currentState;
         private EnemyStateType _currentStateType;
         private bool _initialized;
@@ -82,9 +91,17 @@ namespace Emberwild.AI.Enemy
             // 自动补齐引用(减少 Inspector 手拖出错)
             if (_agent == null) _agent = GetComponent<CustomNavAgent>();
             if (_perception == null) _perception = GetComponent<EnemyPerception>();
-            if (_animator == null) _animator = FindAnimator();
             if (_entity == null) _entity = GetComponent<EnemyEntity>();
             if (_combat == null) _combat = GetComponent<EnemyCombat>();
+
+            // Animator 引用校验：填错组件会导致静默退化成 NullEnemyAnimator（表现为"能动但没动画"）
+            if (_animator != null && !(_animator is IEnemyAnimator))
+            {
+                AppLog.Error("Enemy", $"{name}：Animator 字段填的是 {_animator.GetType().Name}，"
+                    + "不是 IEnemyAnimator 的实现，动画将完全不生效");
+                _animator = null;
+            }
+            if (_animator == null) _animator = FindAnimator();
             if (_config != null)
             {
                 // 注入感知/移动/战斗参数(判空,避免缺组件时 Awake 直接崩)
@@ -95,20 +112,28 @@ namespace Emberwild.AI.Enemy
                     _agent.turnSpeed = _config.turnSpeed;
                     _agent.stoppingDistance = _config.stoppingDistance;
                 }
-                if (_combat != null) _combat.Configure(_config.attackDuration);
+                if (_combat != null) _combat.Configure(_config);
             }
 
             // 用工厂创建所有状态(新状态只需在工厂注册)
+            var missing = new List<string>();
             foreach (EnemyStateType type in Enum.GetValues(typeof(EnemyStateType)))
             {
                 var state = EnemyStateFactory.Create(type);
                 if (state != null) _states[type] = state;
+                else missing.Add(type.ToString());
+            }
+
+            if (missing.Count > 0)
+            {
+                AppLog.Error("Enemy", $"{name}：以下状态未在 EnemyStateFactory 注册 → [{string.Join(", ", missing)}]");
             }
 
             // 从配置构建行为树
             if (_config != null)
             {
                 _root = BTBuilder.Build(_config.decisionTree);
+                AppLog.Info("Enemy", $"{name} 就绪：配置={_config.name} 分支={_config.decisionTree.Count} 条");
             }
             else
             {

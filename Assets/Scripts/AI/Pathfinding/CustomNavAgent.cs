@@ -30,6 +30,21 @@ namespace Emberwild.AI.Pathfinding
         private bool _hasDestination = false;
         private float _lastPathUpdateTime;
 
+        /// <summary>移动锁：锁定期间不吃任何位移（含物理推挤），用于攻击/受击等定身场景。</summary>
+        private bool _motionLocked;
+
+        /// <summary>基础约束：只冻结旋转，位置可动。</summary>
+        private const RigidbodyConstraints BaseConstraints =
+            RigidbodyConstraints.FreezeRotationX |
+            RigidbodyConstraints.FreezeRotationY |
+            RigidbodyConstraints.FreezeRotationZ;
+
+        /// <summary>锁定约束：在基础之上再冻结水平位移，Y 轴保留以维持重力。</summary>
+        private const RigidbodyConstraints LockedConstraints =
+            BaseConstraints |
+            RigidbodyConstraints.FreezePositionX |
+            RigidbodyConstraints.FreezePositionZ;
+
         /// <summary>
         /// 获取当前实体的实际移动速度向量长度。
         /// 通常用于传递给 Animator 动画状态机（如 animator.SetFloat("Speed", agent.VelocityMagnitude)）以驱动跑动动画。
@@ -40,7 +55,31 @@ namespace Emberwild.AI.Pathfinding
         void Awake()
         {
             _rb = GetComponent<Rigidbody>();
-            _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationY;
+            _rb.constraints = BaseConstraints;
+        }
+
+        /// <summary>
+        /// 锁定/解锁移动。锁定后完全定在原地，不受自己的速度也不受外力推挤。
+        /// 攻击、受击、施法、姿态这类"必须站住"的状态在 OnEnter 锁、OnExit 解锁。
+        /// </summary>
+        public void SetMotionLocked(bool locked)
+        {
+            if (_rb == null) return;
+
+            _motionLocked = locked;
+
+            if (locked)
+            {
+                _hasDestination = false;
+                _currentPath = null;
+                _rb.velocity = new Vector3(0f, _rb.velocity.y, 0f);
+                _rb.angularVelocity = Vector3.zero;
+                _rb.constraints = LockedConstraints;
+            }
+            else
+            {
+                _rb.constraints = BaseConstraints;
+            }
         }
 
         /// <summary>
@@ -50,6 +89,8 @@ namespace Emberwild.AI.Pathfinding
         /// <param name="targetPos">最终要去的世界坐标</param>
         public void SetDestination(Vector3 targetPos)
         {
+            if (_motionLocked) return;
+
             _destination = targetPos;
             _hasDestination = true;
         }
@@ -86,7 +127,7 @@ namespace Emberwild.AI.Pathfinding
 
         public void SetDirectVelocity(Vector3 direction, float speed)
         {
-            if (_rb == null) return;
+            if (_rb == null || _motionLocked) return;
 
             Vector3 dir = direction;
             dir.y = 0f;
@@ -100,6 +141,7 @@ namespace Emberwild.AI.Pathfinding
 
         void FixedUpdate()
         {
+            if (_motionLocked) return;
             if (!_hasDestination) return;
 
             float distanceToTarget = Vector3.Distance(transform.position, _destination);

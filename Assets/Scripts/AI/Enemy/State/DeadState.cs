@@ -10,7 +10,7 @@ namespace Emberwild.AI.Enemy.State
     {
         public void OnEnter(EnemyBrain brain)
         {
-            brain.Agent.Stop();
+            brain.Agent.SetMotionLocked(true);
             brain.Animator.SetMoveSpeed(0f);
             brain.Animator.SetDead(true);
 

@@ -17,5 +17,13 @@ namespace Emberwild.AI.Enemy.State
         [InspectorName("滚动冲刺")] RollChase,
         [InspectorName("远程攻击")] AttackRanged,
         [InspectorName("缩壳防御")] Hide,
+
+
+        // 新增状态
+        [InspectorName("警戒张望")] Alert,
+        [InspectorName("重击")] AttackHeavy,
+        [InspectorName("扑击突进")] Pounce,
+        [InspectorName("跃击")] Leap,
+        [InspectorName("施法")] CastSpell,
     }
 }

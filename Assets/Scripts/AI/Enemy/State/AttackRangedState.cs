@@ -7,21 +7,23 @@ using UnityEngine;
 
 namespace Emberwild.AI.Enemy.State
 {
+    /// <summary>远程攻击：停下并朝目标发射，攻击窗口结束后转 Chase / Idle。</summary>
     public class AttackRangedState : IEnemyState
     {
         public void OnEnter(EnemyBrain brain)
         {
-            brain.Agent.Stop();
+            brain.Agent.SetMotionLocked(true);
             brain.Animator.SetMoveSpeed(0f);
 
             var target = brain.BB.Target;
-            if(target != null)
+            if (target != null)
             {
                 brain.Agent.FaceTowards(target.position);
                 brain.Combat.DoRangedAttack(target.position);
             }
 
             brain.BB.LastAttackTime = Time.time;
+            brain.BB.LastRangedTime = Time.time;
         }
 
         public void OnUpdate(EnemyBrain brain)
@@ -32,11 +34,6 @@ namespace Emberwild.AI.Enemy.State
             }
         }
 
-        public void OnExit(EnemyBrain brain)
-        {
-            // 无需退出清理
-        }
-
-        
+        public void OnExit(EnemyBrain brain) { brain.Agent.SetMotionLocked(false); }
     }
 }

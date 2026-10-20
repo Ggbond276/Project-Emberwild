@@ -38,5 +38,15 @@
     "HP": 100.0,
     "AD": 10.0,
     "DEF": 10.0
+  },
+  "2002": {
+    "TID": 2002,
+    "Name": "WereWolf",
+    "MainType": "Monster",
+    "SubType": "Werewolf",
+    "Resource": "Prefabs/Monsters/WereWolf",
+    "HP": 180.0,
+    "AD": 16.0,
+    "DEF": 12.0
   }
 }

@@ -689,7 +689,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47607eac337964d4eb8345056dfcb070, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyPrefab: {fileID: 5989415009243184072, guid: a8aefc4c8cb28dd48b22f7918239bdf2, type: 3}
+  enemyPrefab: {fileID: 5520583845748892553, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
   spawnInterval: 3
   maxEnemies: 1
   spawnRadius: 5
@@ -1443,63 +1443,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1186711966
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 4.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 8.93
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748473769, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5520583845748892553, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
-      propertyPath: m_Name
-      value: Werewolf
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
 --- !u!1 &1245827721
 GameObject:
   m_ObjectHideFlags: 0
@@ -2397,4 +2340,3 @@ SceneRoots:
   - {fileID: 582125876}
   - {fileID: 1873103995}
   - {fileID: 27431511}
-  - {fileID: 1186711966}
