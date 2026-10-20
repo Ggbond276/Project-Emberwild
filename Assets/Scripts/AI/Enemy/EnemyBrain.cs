@@ -46,6 +46,8 @@ namespace Emberwild.AI.Enemy
         private MonsterAIDefinition _definition;
         private EnemyAbilityRuntime _abilities;
         private BehaviourRuleSelector _behavior;
+
+
         private RuntimeMode _mode = RuntimeMode.Idle;
         private bool _initialized;
         private bool _startupFailed;
@@ -133,6 +135,10 @@ namespace Emberwild.AI.Enemy
                 return Mathf.Clamp01(_agent.VelocityMagnitude / RunSpeed);
             }
         }
+
+
+
+
 
         /// <summary>
         /// 自动补齐本地组件、解析动画端口并准备运行时定义。
@@ -291,6 +297,7 @@ namespace Emberwild.AI.Enemy
                 return;
             }
 
+            // 每帧调度EvaluateBehaviour 执行规则选择
             EvaluateBehavior();
         }
 
@@ -312,15 +319,23 @@ namespace Emberwild.AI.Enemy
                 : "none";
         }
 
+
+
+
+
         /// <summary>
         /// 执行行为规则，并把选择结果转换为能力、追击或待机。
         /// </summary>
         private void EvaluateBehavior()
         {
             var decision = _behavior.Select(BB, _abilities, Attribute, Time.time);
+
+            // 2.调试与日志
             _debugDecision = string.IsNullOrEmpty(decision.AbilityId)
                 ? decision.Action
                 : $"{decision.Action}:{decision.AbilityId}";
+
+
             switch (decision.Action)
             {
                 case BehaviorActions.Ability:

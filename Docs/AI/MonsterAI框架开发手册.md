@@ -45,10 +45,11 @@ Monster external tables
 | 模块 | 文件 | 职责 |
 |---|---|---|
 | 运行时装配 | `EnemyBrain.cs` | 自动解析组件、加载定义、驱动模式和能力 |
-| 统一数据 | `Ability/AbilityTypes.cs` | 怪物、能力、行为规则、动画映射 |
-| 能力运行时 | `Ability/AbilityRuntime.cs` | 冷却、能力选择、通用执行器 |
-| 行为选择 | `Ability/BehaviourRuleSelector.cs` | 顺序判断条件并选择能力或追击 |
-| 定义组装 | `Ability/MonsterAIDefinitionFactory.cs` | 按 TID 组装外联表并校验 |
+| 统一数据 | `Ability/Data/` | 怪物、能力、行为规则、动画映射的数据类型 |
+| 能力运行时 | `Ability/Runtime/`、`Ability/Executors/` | 冷却、能力选择、通用执行器 |
+| 行为选择 | `Ability/Behaviour/` | 条件求值、顺序判断并选择能力或追击 |
+| 定义组装 | `Ability/Repository/` | 按 TID 组装外联表 |
+| 配置校验 | `Ability/Validation/` | 校验结构、引用和战斗数据连接 |
 | 动画适配 | `EAnimator/EnemyAnimator.cs` | 语义动作到 Animator 参数的映射 |
 
 运行模式只保留 `Idle / Combat / Stagger / Dead`。具体招式不再对应 FSM 状态类。
@@ -340,10 +341,12 @@ Pounce 使用原地 `attack` 执行器，不产生位移。Melee 使用 1 秒全
 | `Data/Data/MonsterAnimation.txt` | 已由 Excel2Json 生成 |
 | `Data/Data/CharacterDefine.txt` | 已存在 |
 | `Data/Data/AttackDefine.txt` | 已存在 |
-| `Assets/Scripts/AI/Enemy/Ability/AbilityTypes.cs` | 已存在 |
-| `Assets/Scripts/AI/Enemy/Ability/AbilityRuntime.cs` | 已存在 |
-| `Assets/Scripts/AI/Enemy/Ability/BehaviourRuleSelector.cs` | 已存在 |
-| `Assets/Scripts/AI/Enemy/Ability/MonsterAIDefinitionFactory.cs` | 已存在 |
+| `Assets/Scripts/AI/Enemy/Ability/Data/` | 运行时数据对象目录 |
+| `Assets/Scripts/AI/Enemy/Ability/Runtime/` | 能力运行时与接口目录 |
+| `Assets/Scripts/AI/Enemy/Ability/Executors/` | 通用能力执行器目录 |
+| `Assets/Scripts/AI/Enemy/Ability/Behaviour/` | 行为条件与选择器目录 |
+| `Assets/Scripts/AI/Enemy/Ability/Repository/` | 怪物定义组装目录 |
+| `Assets/Scripts/AI/Enemy/Ability/Validation/` | 怪物定义校验目录 |
 | `Assets/Scripts/AI/Enemy/EnemyBrain.cs` | 已存在 |
 | `Assets/Scripts/AI/Enemy/EAnimator/EnemyAnimator.cs` | 已存在 |
 

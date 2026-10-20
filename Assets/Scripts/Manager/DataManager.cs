@@ -17,16 +17,11 @@ namespace Emberwild.Manager
         public Dictionary<int, AttackDefine> Attacks = null;
         public Dictionary<string, Dictionary<int, AttackDefine>> ComboGroupDict = new Dictionary<string, Dictionary<int, AttackDefine>>();
 
-        public Dictionary<int, MonsterAICoreDefine> MonsterAICores =
-            new Dictionary<int, MonsterAICoreDefine>();
-        public Dictionary<int, List<MonsterAbilityDefine>> MonsterAbilitiesByTid =
-            new Dictionary<int, List<MonsterAbilityDefine>>();
-        public Dictionary<int, List<MonsterBehaviorDefine>> MonsterBehaviorsByTid =
-            new Dictionary<int, List<MonsterBehaviorDefine>>();
-        public Dictionary<int, List<MonsterBehaviorConditionDefine>> MonsterBehaviorConditionsByTid =
-            new Dictionary<int, List<MonsterBehaviorConditionDefine>>();
-        public Dictionary<int, List<MonsterAnimationBindingDefine>> MonsterAnimationBindingsByTid =
-            new Dictionary<int, List<MonsterAnimationBindingDefine>>();
+        public Dictionary<int, MonsterAICoreDefine> MonsterAICores = new Dictionary<int, MonsterAICoreDefine>();
+        public Dictionary<int, List<MonsterAbilityDefine>> MonsterAbilitiesByTid = new Dictionary<int, List<MonsterAbilityDefine>>();
+        public Dictionary<int, List<MonsterBehaviorDefine>> MonsterBehaviorsByTid = new Dictionary<int, List<MonsterBehaviorDefine>>();
+        public Dictionary<int, List<MonsterBehaviorConditionDefine>> MonsterBehaviorConditionsByTid = new Dictionary<int, List<MonsterBehaviorConditionDefine>>();
+        public Dictionary<int, List<MonsterAnimationBindingDefine>> MonsterAnimationBindingsByTid = new Dictionary<int, List<MonsterAnimationBindingDefine>>();
 
          public DataManager()
         {
