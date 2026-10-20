@@ -689,7 +689,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47607eac337964d4eb8345056dfcb070, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyPrefab: {fileID: 5520583845748892553, guid: 94dd2061678f8a94caf477d694a3e473, type: 3}
+  spawnTid: 2002
   spawnInterval: 3
   maxEnemies: 1
   spawnRadius: 5
@@ -702,7 +702,7 @@ Transform:
   m_GameObject: {fileID: 582125874}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 18.15, y: 3.78, z: 16.64}
+  m_LocalPosition: {x: 23.83, y: 3.78, z: 22.32}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

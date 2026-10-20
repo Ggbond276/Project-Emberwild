@@ -1,3 +1,4 @@
+#if false
 using Emberwild.AI.BT;
 using UnityEditor;
 using UnityEngine;
@@ -134,3 +135,4 @@ namespace Emberwild.AI.BT.Editor
         }
     }
 }
+#endif

@@ -821,10 +821,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _tid: 2001
-  _fallbackHp: 100
-  _fallbackAD: 10
-  _fallbackDEF: 10
-  _combatAttr: {fileID: 0}
 --- !u!114 &4149274362734657797
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -837,12 +833,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e8019177b57a1446ae185378b1b6262, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _sightRange: 10
-  _loseTargetRange: 13
   _targetLayer:
     serializedVersion: 2
     m_Bits: 8
-  _scanInterval: 0.2
 --- !u!114 &4431070299439551208
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -872,12 +865,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea103f897c739db4d8e31771ce93016b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _agent: {fileID: 0}
-  _perception: {fileID: 0}
-  _entity: {fileID: 0}
-  _combat: {fileID: 0}
-  _config: {fileID: 11400000, guid: c358ed5983faaf04d83eaf6d7a3392fd, type: 2}
-  _animator: {fileID: 0}
 --- !u!114 &3812822122396561185
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -890,9 +877,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ea222553d2305f47845e02dbfc0e116, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _animator: {fileID: 0}
-  _entity: {fileID: 0}
-  _attackDuration: 0.6
 --- !u!114 &4200381000629044451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -905,7 +889,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d6904512f3ebd78419ad45bf57661eaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _animator: {fileID: 0}
 --- !u!1 &6326956281371527221
 GameObject:
   m_ObjectHideFlags: 0

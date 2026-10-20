@@ -21,7 +21,7 @@ namespace Emberwild.Core.Test
         [Tooltip("寻路网格的覆盖尺寸 (X和Z宽跨度)")]
         [SerializeField] private Vector2 _gridWorldSize = new Vector2(20, 20);
         [Tooltip("单个寻路节点的检测半径")]
-        [SerializeField] private float _nodeRadius = 0.5f;
+        [SerializeField] private float _nodeRadius = 0.1f;
         [Tooltip("障碍物图层，用于标记不可行走的区域")]
         [SerializeField] private LayerMask _obstacleMask;
 

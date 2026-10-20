@@ -23,9 +23,16 @@ namespace Emberwild.Combat
         public bool IsDead { get; private set; }
 
         /// <summary>
-        /// 缩壳减伤标志
+        /// Runtime damage multiplier. One means no mitigation.
         /// </summary>
-        public bool IsHidden { get; set; }
+        public float DamageTakenMultiplier { get; set; } = 1f;
+
+        /// <summary>Legacy compatibility for the old shell-only flag.</summary>
+        public bool IsHidden
+        {
+            get => DamageTakenMultiplier < 1f;
+            set => DamageTakenMultiplier = value ? 0.5f : 1f;
+        }
 
         private ICombatEntity _entity;
 
@@ -60,7 +67,7 @@ namespace Emberwild.Combat
         {
             if (IsDead) return;
 
-            if (IsHidden) damageAmount *= 0.5f; // 缩壳减伤0.5f
+            damageAmount *= Mathf.Max(0f, DamageTakenMultiplier);
 
             CurrentHp = Mathf.Max(0, CurrentHp - damageAmount);
             AppLog.Info("Combat", $"{gameObject.name} 受到 {damageAmount:F1} 伤害, 剩余 HP: {CurrentHp:F1}");

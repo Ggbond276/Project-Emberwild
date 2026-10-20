@@ -26,13 +26,7 @@ namespace Emberwild.AI.Enemy
         [Tooltip("对应 Data/Data/CharacterDefine.txt 里的 TID")]
         [SerializeField] private int _tid = 2001;
 
-        [Header("兜底数值(数据表读不到时使用)")]
-        [SerializeField] private float _fallbackHp = 100f;
-        [SerializeField] private float _fallbackAD = 10f;
-        [SerializeField] private float _fallbackDEF = 10f;
-
-        [Header("依赖组件")]
-        [SerializeField] private CombatAttribute _combatAttr;
+        private CombatAttribute _combatAttr;
 
 
         private CharacterDefine _define;
@@ -40,9 +34,9 @@ namespace Emberwild.AI.Enemy
         public int TID => _define != null ? _define.TID : _tid;
         public string EnemyName => _define != null ? _define.Name : gameObject.name;
         public string SubType => _define != null ? _define.SubType : "None";
-        public float MaxHp => _define != null ? _define.HP : _fallbackHp;
-        public float BaseAD => _define != null ? _define.AD : _fallbackAD;
-        public float BaseDEF => _define != null ? _define.DEF : _fallbackDEF;
+        public float MaxHp => _define != null ? _define.HP : 0f;
+        public float BaseAD => _define != null ? _define.AD : 0f;
+        public float BaseDEF => _define != null ? _define.DEF : 0f;
         public CombatAttribute Attribute => _combatAttr;
 
 
@@ -55,10 +49,26 @@ namespace Emberwild.AI.Enemy
             }
         }
 
+        /// <summary>
+        /// 覆盖 Prefab 上的默认 TID，供 Spawner 在 Start 前按配置表选怪。
+        /// </summary>
+        /// <param name="tid">CharacterDefine 中的怪物 TID。</param>
+        public void SetTid(int tid)
+        {
+            _tid = tid;
+            _define = null;
+        }
+
 
         private void Start()
         {
             LoadDefine();
+            if (_define == null)
+            {
+                AppLog.Error("Enemy", $"{name}: CharacterDefine TID={_tid} is missing.");
+                enabled = false;
+                return;
+            }
             _combatAttr.Initialize(MaxHp, MaxHp, BaseAD, BaseDEF);
         }
 
@@ -72,7 +82,7 @@ namespace Emberwild.AI.Enemy
             }
             else
             {
-                AppLog.Warning("Enemy", $"{name} 数据表里找不到 TID={_tid}, 使用兜底数值");
+                AppLog.Error("Enemy", $"{name}: CharacterDefine TID={_tid} was not found.");
             }
         }
 

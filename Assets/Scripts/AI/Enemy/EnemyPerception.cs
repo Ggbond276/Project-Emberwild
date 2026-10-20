@@ -6,18 +6,12 @@ namespace Emberwild.AI.Enemy
     /// <summary>感知：定时扫描玩家并写入黑板。</summary>
     public class EnemyPerception : MonoBehaviour
     {
-        [Header("视野")]
-        [Tooltip("能看到玩家的最大距离")]
-        [SerializeField] private float _sightRange = 10f;
-
-        [Tooltip("丢失目标距离，比 _sightRange 大一点形成滞后区间")]
-        [SerializeField] private float _loseTargetRange = 13f;
-
         [Tooltip("要搜索的目标层，留空自动使用 Player 层")]
         [SerializeField] private LayerMask _targetLayer;
 
-        [Tooltip("雷达扫描间隔(秒)")]
-        [SerializeField] private float _scanInterval = 0.2f;
+        private float _sightRange = 10f;
+        private float _loseTargetRange = 13f;
+        private float _scanInterval = 0.2f;
 
         private Transform _currentTarget;
         private float _lastScanTime = -999f;

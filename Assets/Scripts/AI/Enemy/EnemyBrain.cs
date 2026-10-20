@@ -1,72 +1,100 @@
-﻿using Emberwild.AI.BT;
+using Emberwild.AI.Enemy.Ability;
 using Emberwild.AI.Enemy.EAnimator;
-using Emberwild.AI.Enemy.State;
 using Emberwild.AI.Pathfinding;
 using Emberwild.Combat;
 using Emberwild.Core.AppLog;
 using Emberwild.Core.Events;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Emberwild.AI.Enemy
 {
     /// <summary>
-    /// 怪物决策核心 -- 唯一的状态切换入口
-    /// 
-    /// 职责：
-    /// - 持有所有状态实例(字典)
-    /// - 每帧驱动感知 -> 驱动当前状态
-    /// - 提供 ChangeState() 给状态类调用
+    /// 单个怪物的运行时装配入口。
+    /// 负责自动解析本地组件、加载怪物定义，并驱动感知、行为规则和能力执行。
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CustomNavAgent))]
-    public class EnemyBrain : MonoBehaviour
+    [RequireComponent(typeof(EnemyPerception))]
+    [RequireComponent(typeof(EnemyEntity))]
+    [RequireComponent(typeof(EnemyCombat))]
+    public class EnemyBrain : MonoBehaviour, IEnemyAbilityContext
     {
-        [Header("组件引用")]
-        [SerializeField] private CustomNavAgent _agent; // 腿
-        [SerializeField] private EnemyPerception _perception; // 眼睛
-        [SerializeField] private EnemyEntity _entity; // 数据
-        [SerializeField] private EnemyCombat _combat; // 手
+        private enum RuntimeMode
+        {
+            Idle,
+            Combat,
+            Stagger,
+            Dead
+        }
 
-        [SerializeField] private EnemyAIConfig _config;          // 配置(每怪一份)
-        [SerializeField] private MonoBehaviour _animator;        // 挂 ShellAnimator/WolfAnimator(实现 IEnemyAnimator)
+        [Header("Runtime snapshot")]
+        [SerializeField] private string _debugMode;
+        [SerializeField] private string _debugAbility;
+        [SerializeField] private string _debugTarget;
+        [SerializeField] private float _debugDistance;
+        [SerializeField] private float _debugHpRatio;
+        [SerializeField] private string _debugSource;
+        [SerializeField] private string _debugDecision;
+        [SerializeField] private string _debugMove;
 
+        private CustomNavAgent _agent;
+        private EnemyPerception _perception;
+        private EnemyEntity _entity;
+        private EnemyCombat _combat;
+        private IEnemyAnimator _animator;
+
+        private MonsterAIDefinition _definition;
+        private EnemyAbilityRuntime _abilities;
+        private BehaviourRuleSelector _behavior;
+        private RuntimeMode _mode = RuntimeMode.Idle;
+        private bool _initialized;
+        private bool _startupFailed;
+        private float _staggerEndsAt;
+        private int _lastTid;
+
+        /// <summary>怪物共享黑板，包含目标、距离、血量和最近受击时间。</summary>
+        public EnemyBlackboard BB { get; } = new EnemyBlackboard();
+
+        /// <summary>供能力上下文访问的黑板别名。</summary>
+        public EnemyBlackboard Blackboard => BB;
+
+        /// <summary>自动解析到的寻路移动组件。</summary>
         public CustomNavAgent Agent => _agent;
+
+        /// <summary>自动解析到的感知组件。</summary>
         public EnemyPerception Perception => _perception;
-        public IEnemyAnimator Animator => _animator as IEnemyAnimator ?? NullEnemyAnimator.Instance;
+
+        /// <summary>动画端口；未配置有效适配器时返回空实现。</summary>
+        public IEnemyAnimator Animator => _animator ?? NullEnemyAnimator.Instance;
+
+        /// <summary>怪物实体与伤害数据桥接组件。</summary>
         public EnemyEntity Entity => _entity;
+
+        /// <summary>能力执行器使用的攻击事件发布组件。</summary>
         public EnemyCombat Combat => _combat;
 
+        /// <summary>怪物的当前战斗属性。</summary>
+        public CombatAttribute Attribute => _entity != null ? _entity.Attribute : null;
 
-        public float RunSpeed => _config != null ? _config.runSpeed : 4f;
-        public float RollSpeed => _config != null ? _config.rollSpeed : 8f;
-        public float RollDuration => _config != null ? _config.rollDuration : 1f;
-        public float HitStunDuration => _config != null ? _config.hitstunDuration : 0.4f;
-        public float HideDuration => _config != null ? _config.hideDuration : 10f;
+        /// <summary>能力上下文使用的世界变换。</summary>
+        public Transform Transform => transform;
 
+        /// <summary>当前加载的统一怪物定义。</summary>
+        public MonsterAIDefinition Definition => _definition;
 
-        public float HeavyAttackDuration => _config != null ? _config.heavyAttackDuration : 0.9f;
-        public float PounceSpeed => _config != null ? _config.pounceSpeed : 11f;
-        public float PounceDuration => _config != null ? _config.pounceDuration : 0.35f;
-        public float LeapSpeed => _config != null ? _config.leapSpeed : 8f;
-        public float LeapDuration => _config != null ? _config.leapDuration : 0.6f;
-        public float SpellDuration => _config != null ? _config.spellDuration : 1.2f;
-        public float AlertDuration => _config != null ? _config.alertDuration : 0.8f;
+        /// <summary>当前执行中的能力 ID。</summary>
+        public string CurrentAbilityId => _abilities != null ? _abilities.ActiveAbilityId : string.Empty;
 
+        /// <summary>当前 HSM 模式名称，用于调试显示。</summary>
+        public string CurrentMode => _mode.ToString();
 
-        private IEnemyState _currentState;
-        private EnemyStateType _currentStateType;
-        private bool _initialized;
-        public EnemyBlackboard BB { get; } = new EnemyBlackboard();
-        
+        /// <summary>当前怪物的奔跑速度。</summary>
+        public float RunSpeed => _definition != null ? _definition.runSpeed : 4f;
 
-        /// <summary>
-        /// 把当前速度归一化为 0 - 1
-        /// </summary>
+        /// <summary>当前怪物的受击硬直时间。</summary>
+        public float HitStunDuration => _definition != null ? _definition.hitStunDuration : 0.4f;
+
+        /// <summary>将当前实际速度归一化到 0 到 1，用于 Animator 移动混合。</summary>
         public float NormalizedSpeed
         {
             get
@@ -76,167 +104,363 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>
-        /// 状态字典
-        /// </summary>
-        private readonly Dictionary<EnemyStateType, IEnemyState> _states = new Dictionary<EnemyStateType, IEnemyState>();
-
-        /// <summary>
-        /// 行为树根节点 
-        /// </summary>
-        private BTNode _root;
-
+        /// <summary>自动补齐本地组件、解析动画端口并准备运行时定义。</summary>
         private void Awake()
         {
-            // 自动补齐引用(减少 Inspector 手拖出错)
-            if (_agent == null) _agent = GetComponent<CustomNavAgent>();
-            if (_perception == null) _perception = GetComponent<EnemyPerception>();
-            if (_entity == null) _entity = GetComponent<EnemyEntity>();
-            if (_combat == null) _combat = GetComponent<EnemyCombat>();
+            ResolveComponents();
+            ResolveAnimator();
+            if (_startupFailed) return;
 
-            // Animator 引用校验：填错组件会导致静默退化成 NullEnemyAnimator（表现为"能动但没动画"）
-            if (_animator != null && !(_animator is IEnemyAnimator))
-            {
-                AppLog.Error("Enemy", $"{name}：Animator 字段填的是 {_animator.GetType().Name}，"
-                    + "不是 IEnemyAnimator 的实现，动画将完全不生效");
-                _animator = null;
-            }
-            if (_animator == null) _animator = FindAnimator();
-            if (_config != null)
-            {
-                // 注入感知/移动/战斗参数(判空,避免缺组件时 Awake 直接崩)
-                if (_perception != null) _perception.Configure(_config.viewRange, _config.loseTargetRange, _config.scanInterval);
-                if (_agent != null)
-                {
-                    _agent.moveSpeed = _config.runSpeed;
-                    _agent.turnSpeed = _config.turnSpeed;
-                    _agent.stoppingDistance = _config.stoppingDistance;
-                }
-                if (_combat != null) _combat.Configure(_config);
-            }
-
-            // 用工厂创建所有状态(新状态只需在工厂注册)
-            var missing = new List<string>();
-            foreach (EnemyStateType type in Enum.GetValues(typeof(EnemyStateType)))
-            {
-                var state = EnemyStateFactory.Create(type);
-                if (state != null) _states[type] = state;
-                else missing.Add(type.ToString());
-            }
-
-            if (missing.Count > 0)
-            {
-                AppLog.Error("Enemy", $"{name}：以下状态未在 EnemyStateFactory 注册 → [{string.Join(", ", missing)}]");
-            }
-
-            // 从配置构建行为树
-            if (_config != null)
-            {
-                _root = BTBuilder.Build(_config.decisionTree);
-                AppLog.Info("Enemy", $"{name} 就绪：配置={_config.name} 分支={_config.decisionTree.Count} 条");
-            }
-            else
-            {
-                AppLog.Error("Enemy", "EnemyBrain: 未配置 EnemyAIConfig");
-                enabled = false;
-            }
+            ConfigureRuntime(_entity != null ? _entity.TID : 0);
         }
 
-        /// <summary>
-        /// 在自身组件中查找第一个实现 IEnemyAnimator 的组件(接口类型无法用 GetComponent 泛型直接查询)。
-        /// </summary>
-        private MonoBehaviour FindAnimator()
-        {
-            foreach (var mb in GetComponents<MonoBehaviour>())
-            {
-                if (mb is IEnemyAnimator) return mb;
-            }
-            return null;
-        }
-
+        /// <summary>完成必要依赖和战斗数据校验后进入初始待机模式。</summary>
         private void Start()
         {
-            if (_agent == null)
+            if (_startupFailed) return;
+            if (_agent == null || _perception == null || _entity == null || _combat == null)
             {
-                AppLog.Error("Enemy", "EnemyBrain: 缺少 CustomNavAgent, 无法移动");
-                enabled = false;
+                FailStartup("required local components are missing.");
                 return;
             }
-            if (_perception == null)
+            if (_definition == null || _abilities == null || _behavior == null)
             {
-                AppLog.Error("Enemy", "EnemyBrain: 缺少 EnemyPerception, 螃蟹将无法发现玩家");
-                enabled = false;
+                FailStartup("monster runtime definition is not configured.");
+                return;
+            }
+            if (!MonsterAIDefinitionValidator.ValidateCombatLinks(_definition, _lastTid, out string combatError))
+            {
+                FailStartup(combatError);
                 return;
             }
 
             _initialized = true;
-            // 初始状态由行为树第一帧决策,无需手动 ChangeState
+            EnterIdle();
         }
 
+        /// <summary>
+        /// 由 Spawner 在 Start 前调用，用 TID 覆盖 Prefab 默认值并重新装配运行时。
+        /// </summary>
+        public void InitializeFromTid(int tid)
+        {
+            if (tid <= 0) return;
+            _lastTid = tid;
+            _startupFailed = false;
+            enabled = true;
+            if (_entity != null) _entity.SetTid(tid);
+            ResolveComponents();
+            ResolveAnimator();
+            ConfigureRuntime(tid);
+
+            if (_initialized && !_startupFailed)
+            {
+                if (!MonsterAIDefinitionValidator.ValidateCombatLinks(_definition, tid, out string combatError))
+                {
+                    FailStartup(combatError);
+                    return;
+                }
+                _abilities.Abort();
+                EnterIdle();
+            }
+        }
+
+        /// <summary>订阅怪物受伤和死亡事件。</summary>
         private void OnEnable()
         {
             EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
             EventBus.Subscribe<EnemyDiedEvent>(OnDied);
         }
 
+        /// <summary>取消事件订阅并清理正在执行的能力。</summary>
         private void OnDisable()
         {
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
             EventBus.Unsubscribe<EnemyDiedEvent>(OnDied);
+            _abilities?.Abort();
         }
 
+        /// <summary>每帧更新感知、短板中断、能力执行或行为决策。</summary>
         private void Update()
         {
-            if (!_initialized) return;
+            if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
 
-            // 死亡后短路:不再感知、不再决策、不再执行
-            if (_currentStateType == EnemyStateType.Dead) return;
+            _perception.Tick(BB);
+            if (_entity != null && _entity.Attribute != null && _entity.MaxHp > 0f)
+                BB.HpRatio = _entity.Attribute.CurrentHp / _entity.MaxHp;
 
-            _perception.Tick(BB); // 1. 感知改写通用数据黑板
-            _root.Evaluate(this); // 2.行为树做决策
-            _currentState?.OnUpdate(this); // 3.状态执行
-        }
-
-        public void ChangeState(EnemyStateType type)
-        {
-            if (_currentState != null && _currentStateType == type) return;
-
-            if( !_states.TryGetValue(type, out var next))
+            if (IsDead())
             {
-                AppLog.Error("Enemy", $"EnemyBrain: 状态 {type} 未注册");
+                EnterDead();
                 return;
             }
 
-            _currentState?.OnExit(this);
-            _currentStateType = type;
-            _currentState = next;
-            _currentState.OnEnter(this);
+            if (_mode == RuntimeMode.Stagger)
+            {
+                _abilities.Tick(Time.deltaTime);
+                if (!_abilities.IsActive && Time.time >= _staggerEndsAt)
+                    ResumeAfterInterrupt();
+                return;
+            }
 
-            AppLog.Info("Enemy", $"{name} → {type}");
+            if (_abilities.IsActive)
+            {
+                _abilities.Tick(Time.deltaTime);
+                return;
+            }
+
+            EvaluateBehavior();
         }
 
-        /// <summary>
-        /// 受击：打断当前状态 切换到Hit
-        /// </summary>
-        /// <param name="evt"></param>
+        /// <summary>把关键运行状态写入 Inspector，便于现场调试。</summary>
+        private void LateUpdate()
+        {
+            if (!_initialized) return;
+            _debugMode = _mode.ToString();
+            _debugAbility = CurrentAbilityId;
+            _debugTarget = BB.Target != null ? BB.Target.name : "None";
+            _debugDistance = BB.DistanceToTarget;
+            _debugHpRatio = BB.HpRatio;
+            _debugSource = _definition != null ? "Monster external tables" : "None";
+            _debugMove = _agent != null
+                ? $"dest={_agent.HasDestination} locked={_agent.IsMotionLocked} "
+                    + $"path={_agent.PathNodeCount} velocity={_agent.CurrentVelocity.magnitude:F2}"
+                : "none";
+        }
+
+        /// <summary>执行行为规则，并把选择结果转换为能力、追击或待机。</summary>
+        private void EvaluateBehavior()
+        {
+            var decision = _behavior.Select(BB, _abilities, Attribute, Time.time);
+            _debugDecision = string.IsNullOrEmpty(decision.AbilityId)
+                ? decision.Action
+                : $"{decision.Action}:{decision.AbilityId}";
+            switch (decision.Action)
+            {
+                case BehaviorActions.Ability:
+                    if (TryActivateDecision(decision))
+                    {
+                        _mode = RuntimeMode.Combat;
+                        return;
+                    }
+                    if (BB.Target != null) EnterChase();
+                    else EnterIdle();
+                    break;
+                case BehaviorActions.Chase:
+                    EnterChase();
+                    break;
+                default:
+                    EnterIdle();
+                    break;
+            }
+        }
+
+        /// <summary>优先尝试直接能力 ID，其次尝试能力槽。</summary>
+        private bool TryActivateDecision(BehaviourDecision decision)
+        {
+            if (!string.IsNullOrWhiteSpace(decision.AbilityId)
+                && _abilities.TryActivateAbility(decision.AbilityId))
+                return true;
+            return !string.IsNullOrWhiteSpace(decision.Slot)
+                && _abilities.TryActivateSlot(decision.Slot);
+        }
+
+        /// <summary>进入待机模式并锁定不必要的位移。</summary>
+        private void EnterIdle()
+        {
+            if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
+            _mode = RuntimeMode.Idle;
+            _agent.SetMotionLocked(true);
+            Animator.SetMoveSpeed(0f);
+        }
+
+        /// <summary>进入战斗追击模式并持续更新寻路目的地。</summary>
+        private void EnterChase()
+        {
+            if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
+            if (BB.Target == null)
+            {
+                EnterIdle();
+                return;
+            }
+
+            _mode = RuntimeMode.Combat;
+            _agent.SetMotionLocked(false);
+            _agent.SetDestination(BB.Target.position);
+            Animator.SetMoveSpeed(NormalizedSpeed);
+        }
+
+        /// <summary>中断当前能力并进入受击硬直。</summary>
+        private void EnterStagger()
+        {
+            if (_mode == RuntimeMode.Dead) return;
+
+            _abilities.Abort();
+            _mode = RuntimeMode.Stagger;
+            _staggerEndsAt = Time.time + Mathf.Max(0.01f, HitStunDuration);
+            if (!_abilities.TryActivateSlot(AbilitySlotIds.HitReaction))
+            {
+                _agent.SetMotionLocked(true);
+                Animator.SetMoveSpeed(0f);
+            }
+        }
+
+        /// <summary>硬直结束后根据是否仍有目标恢复追击或待机。</summary>
+        private void ResumeAfterInterrupt()
+        {
+            if (IsDead())
+            {
+                EnterDead();
+                return;
+            }
+            _mode = RuntimeMode.Idle;
+            if (BB.Target != null) EnterChase();
+            else EnterIdle();
+        }
+
+        /// <summary>进入不可逆死亡模式并执行死亡能力。</summary>
+        private void EnterDead()
+        {
+            if (_mode == RuntimeMode.Dead) return;
+
+            _abilities.Abort();
+            _mode = RuntimeMode.Dead;
+            _agent.SetMotionLocked(true);
+            Animator.SetMoveSpeed(0f);
+            Animator.SetDead(true);
+
+            if (!_abilities.TryActivateSlot(AbilitySlotIds.DeathReaction))
+            {
+                _agent.enabled = false;
+                _perception.enabled = false;
+                return;
+            }
+
+            _perception.enabled = false;
+        }
+
+        /// <summary>记录伤害数据并触发受击状态。</summary>
         private void OnDamaged(EnemyDamagedEvent evt)
         {
-            if (!_initialized) return;
+            if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
             if (evt.Victim != (ICombatEntity)_entity) return;
 
-            BB.HpRatio = Entity != null ? evt.CurrentHp / Entity.MaxHp : 1f;
+            BB.HpRatio = _entity.MaxHp > 0f ? evt.CurrentHp / _entity.MaxHp : 0f;
             BB.LastHitTime = Time.time;
+            EnterStagger();
+        }
+
+        /// <summary>立即切换到死亡状态。</summary>
+        private void OnDied(EnemyDiedEvent evt)
+        {
+            if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
+            if (evt.Victim != (ICombatEntity)_entity) return;
+            EnterDead();
+        }
+
+        /// <summary>检查实体属性是否已经死亡。</summary>
+        private bool IsDead()
+        {
+            return _entity != null && _entity.Attribute != null && _entity.Attribute.IsDead;
         }
 
         /// <summary>
-        /// 死亡:0 帧立即切 Dead(最高优先级、不可逆)。
-        /// 行为树里的 IsDead 条件保留作兜底(万一事件未触发)。
+        /// 从外联表仓库加载怪物定义，然后配置感知、移动、动画、能力和行为。
         /// </summary>
-        private void OnDied(EnemyDiedEvent evt)
+        private void ConfigureRuntime(int tid)
         {
-            if (!_initialized) return;
-            if (evt.Victim != (ICombatEntity)_entity) return;
-            ChangeState(EnemyStateType.Dead);
+            _startupFailed = false;
+            _lastTid = tid;
+
+            var definition = tid > 0 ? MonsterAIDefinitionRepository.Get(tid) : null;
+            if (MonsterAIDefinitionRepository.HasLoadError)
+            {
+                FailStartup(MonsterAIDefinitionRepository.LoadError);
+                return;
+            }
+            if (definition == null)
+            {
+                FailStartup($"no MonsterAI external table entry for TID {tid}.");
+                return;
+            }
+
+            definition.TID = tid;
+            if (!MonsterAIDefinitionValidator.Validate(definition, out string error))
+            {
+                FailStartup(error);
+                return;
+            }
+
+            if (!Animator.Configure(definition.animation))
+            {
+                FailStartup("animation profile validation failed.");
+                return;
+            }
+
+            if (_perception != null)
+                _perception.Configure(definition.viewRange, definition.loseTargetRange, definition.scanInterval);
+            if (_agent != null)
+            {
+                _agent.moveSpeed = definition.runSpeed;
+                _agent.turnSpeed = definition.turnSpeed;
+                _agent.stoppingDistance = definition.stoppingDistance;
+            }
+            _definition = definition;
+            _abilities = new EnemyAbilityRuntime(this, definition.abilities);
+            _behavior = new BehaviourRuleSelector(definition);
+            _mode = RuntimeMode.Idle;
+
+            AppLog.Info("Enemy",
+                $"{name} ready: TID={definition.TID} abilities={definition.abilities.Count} "
+                + $"rules={definition.behavior.Count} source=monster-tables");
         }
+
+        /// <summary>从当前 GameObject 获取所有必需的本地组件。</summary>
+        private void ResolveComponents()
+        {
+            if (_agent == null) _agent = GetComponent<CustomNavAgent>();
+            if (_perception == null) _perception = GetComponent<EnemyPerception>();
+            if (_entity == null) _entity = GetComponent<EnemyEntity>();
+            if (_combat == null) _combat = GetComponent<EnemyCombat>();
+        }
+
+        /// <summary>查找动画端口，必要时在真实 Animator 对象上自动挂载适配器。</summary>
+        private void ResolveAnimator()
+        {
+            if (_animator != null) return;
+
+            _animator = FindAnimator();
+            if (_animator != null) return;
+
+            Animator unityAnimator = GetComponentInChildren<Animator>(true);
+            if (unityAnimator == null)
+            {
+                FailStartup("no Animator exists in this monster hierarchy.");
+                return;
+            }
+
+            var adapter = unityAnimator.GetComponent<EnemyAnimator>();
+            if (adapter == null)
+                adapter = unityAnimator.gameObject.AddComponent<EnemyAnimator>();
+            _animator = adapter;
+        }
+
+        /// <summary>查找已存在的 IEnemyAnimator 实现。</summary>
+        private IEnemyAnimator FindAnimator()
+        {
+            foreach (var component in GetComponents<MonoBehaviour>())
+            {
+                if (component is IEnemyAnimator animator) return animator;
+            }
+            return null;
+        }
+
+        /// <summary>记录不可恢复错误并停止怪物 AI。</summary>
+        private void FailStartup(string reason)
+        {
+            _startupFailed = true;
+            AppLog.Error("Enemy", $"{name} (TID={_lastTid}): startup failed: {reason}");
+            enabled = false;
+        }
+
     }
 }

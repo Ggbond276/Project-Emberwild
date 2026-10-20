@@ -53,7 +53,9 @@ namespace Emberwild.AI.Pathfinding
 
                 if (currentNode == targetNode)
                 {
-                    return RetracePath(startNode, targetNode);
+                    List<Node> path = RetracePath(startNode, targetNode);
+                    ResetSearchData(closedSet, openSet);
+                    return path;
                 }
 
                 foreach (Node neighbor in grid.GetNeighbors(currentNode))
@@ -73,6 +75,7 @@ namespace Emberwild.AI.Pathfinding
                 }
             }
 
+            ResetSearchData(closedSet, openSet);
             return null;
         }
 
@@ -97,6 +100,29 @@ namespace Emberwild.AI.Pathfinding
 
             if (dstX > dstY) return 14 * dstY + 10 * (dstX - dstY);
             return 14 * dstX + 10 * (dstY - dstX);
+        }
+
+        /// <summary>
+        /// 清理本次搜索访问过的节点，避免上一只怪物的 gCost、hCost 和 parent
+        /// 污染下一次寻路。Node 网格是全局共享的，不能保留单次搜索状态。
+        /// </summary>
+        private static void ResetSearchData(IEnumerable<Node> first, IEnumerable<Node> second)
+        {
+            var reset = new HashSet<Node>();
+            ResetNodes(first, reset);
+            ResetNodes(second, reset);
+        }
+
+        private static void ResetNodes(IEnumerable<Node> nodes, HashSet<Node> reset)
+        {
+            if (nodes == null) return;
+            foreach (var node in nodes)
+            {
+                if (node == null || !reset.Add(node)) continue;
+                node.gCost = 0;
+                node.hCost = 0;
+                node.parent = null;
+            }
         }
 
     }

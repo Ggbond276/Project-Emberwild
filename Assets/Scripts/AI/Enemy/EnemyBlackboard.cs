@@ -41,31 +41,9 @@ namespace Emberwild.AI.Enemy
         public float HpRatio = 1f;
 
         /// <summary>
-        /// 上次攻击时间
-        /// </summary>
-        public float LastAttackTime;
-
-        /// <summary>
-        /// 上次滚动冲刺时间 (计算冷却)
-        /// </summary>
-        public float LastRollTime;
-
-        /// <summary>
         /// 上次受击时间戳
         /// </summary>
         public float LastHitTime = -999f;
 
-        /// <summary>
-        /// 本次战斗是否已缩壳过(一次性标志,避免出壳后反复缩壳)
-        /// </summary>
-        public bool HasHidden;
-
-
-        public float LastHeavyTime;
-        public float LastPounceTime;
-        public float LastLeapTime;
-        public float LastRangedTime;
-        public float LastSpellTime;
-        public bool HasAlerted;
     }
 }

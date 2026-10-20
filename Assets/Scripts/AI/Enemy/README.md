@@ -1,5 +1,19 @@
 # 怪物 AI 快速上手指南（Enemy AI）
 
+> **架构已更新**：本文下面的 `IEnemyState`、状态工厂、`ShellAnimator`、`WolfAnimator`
+> 和旧状态类文件已经删除，仅保留作历史参考，不要按下方旧清单查找或新建这些文件。
+> 当前开发请使用 `Docs/AI/MonsterAI框架开发手册.md`。
+
+当前运行时由 `EnemyBrain + MonsterAIDefinition + EnemyAbilityRuntime` 组成。
+作者在 `Data/Tables` 下的 MonsterAI、MonsterAbility、MonsterBehavior、
+MonsterBehaviorCondition 和 MonsterAnimation 五张外联表中配置，然后运行
+`Data/Excel2Json.cmd` 生成对应的五个 txt。不要手工编辑生成的 txt，
+也不要新增 `AttackHeavyState`、`PounceState` 等状态类。
+
+<!--
+Unity 当前占用了该文件，以下旧版教程已停用。新教程只以
+Docs/AI/MonsterAI框架开发手册.md 为准。
+
 > 本文档让你**不读任何其他文档**，也能独立新建一只怪物 AI。  
 > 详细原理见 `Docs/Planing/18`（架构）、`19`（策划）、`20`（手册）。
 
@@ -166,3 +180,4 @@ namespace Emberwild.AI.Enemy
 - [ ] 全程**没改** `EnemyBrain` / 状态机 / 行为树框架代码
 
 > 若 Wolf 有特有行为（如嚎叫），额外做两件事：① 写 `HowlState : IEnemyState`；② `EnemyStateFactory.Register(EnemyStateType.Howl, () => new HowlState())` + 在 `EnemyStateType` 枚举加 `Howl` + 决策树加对应分支。框架其余零改动。
+-->

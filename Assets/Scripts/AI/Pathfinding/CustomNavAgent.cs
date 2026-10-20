@@ -3,17 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Emberwild.Core.AppLog;
 using UnityEngine;
 
 namespace Emberwild.AI.Pathfinding
 {
+    /// <summary>
+    /// 怪物使用的轻量 A* 移动代理，统一维护寻路、直线位移和移动锁定。
+    /// </summary>
+    [RequireComponent(typeof(Rigidbody))]
     public class CustomNavAgent : MonoBehaviour
     {
         [Header("寻路参数")]
+        [HideInInspector]
         [Tooltip("实体的移动速度")]
         public float moveSpeed = 4f;
+        [HideInInspector]
         [Tooltip("实体转向目标方向的平滑速度")]
         public float turnSpeed = 10f;
+        [HideInInspector]
         [Tooltip("到达目标多近的距离时自动刹车")]
         public float stoppingDistance = 1.5f;
         [Tooltip("每隔多少秒重新向 A* 引擎请求一次最新路线 (值越大性能越好，但反应越迟钝)")]
@@ -29,6 +37,15 @@ namespace Emberwild.AI.Pathfinding
         private Vector3 _destination;
         private bool _hasDestination = false;
         private float _lastPathUpdateTime;
+        private bool _noPathReported;
+        private float _stalledTime;
+        private float _directFallbackUntil;
+
+        public bool HasDestination => _hasDestination;
+        public bool IsMotionLocked => _motionLocked;
+        public int PathNodeCount => _currentPath != null ? _currentPath.Count : 0;
+        public Vector3 CurrentVelocity => _rb != null ? _rb.velocity : Vector3.zero;
+        public Vector3 Destination => _destination;
 
         /// <summary>移动锁：锁定期间不吃任何位移（含物理推挤），用于攻击/受击等定身场景。</summary>
         private bool _motionLocked;
@@ -93,6 +110,8 @@ namespace Emberwild.AI.Pathfinding
 
             _destination = targetPos;
             _hasDestination = true;
+            _noPathReported = false;
+            _stalledTime = 0f;
         }
 
         /// <summary>
@@ -155,6 +174,26 @@ namespace Emberwild.AI.Pathfinding
             {
                 _currentPath = AStarAlgorithm.FindPath(transform.position, _destination);
                 _lastPathUpdateTime = Time.time;
+                if (_currentPath == null || _currentPath.Count == 0)
+                {
+                    if (!_noPathReported)
+                    {
+                        AppLog.Warning("Pathfinding",
+                            $"{name}: no A* path to {_destination}. Check grid bounds and obstacle mask.");
+                        _noPathReported = true;
+                    }
+                    _directFallbackUntil = Time.time + pathUpdateInterval;
+                }
+                else
+                {
+                    _noPathReported = false;
+                }
+            }
+
+            if (Time.time < _directFallbackUntil)
+            {
+                MoveDirectlyToDestination();
+                return;
             }
 
             // 3. 按照算好的路进行物理移动
@@ -187,7 +226,37 @@ namespace Emberwild.AI.Pathfinding
                     Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
                     _rb.rotation = Quaternion.Slerp(_rb.rotation, targetRot, Time.fixedDeltaTime * turnSpeed);
                 }
+
+                float horizontalSpeed = new Vector2(_rb.velocity.x, _rb.velocity.z).magnitude;
+                _stalledTime = horizontalSpeed < 0.05f
+                    ? _stalledTime + Time.fixedDeltaTime
+                    : 0f;
+                if (_stalledTime > 0.5f)
+                {
+                    AppLog.Warning("Pathfinding",
+                        $"{name}: path exists but movement is blocked. Using direct chase fallback.");
+                    _currentPath = null;
+                    _stalledTime = 0f;
+                    _directFallbackUntil = Time.time + pathUpdateInterval;
+                }
             }
+        }
+
+        private void MoveDirectlyToDestination()
+        {
+            Vector3 direction = _destination - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.0001f) return;
+
+            direction.Normalize();
+            _rb.velocity = new Vector3(
+                direction.x * moveSpeed,
+                _rb.velocity.y,
+                direction.z * moveSpeed);
+            _rb.rotation = Quaternion.Slerp(
+                _rb.rotation,
+                Quaternion.LookRotation(direction, Vector3.up),
+                Time.fixedDeltaTime * turnSpeed);
         }
 
         /// <summary>

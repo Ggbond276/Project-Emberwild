@@ -15,9 +15,10 @@
 
         private NullEnemyAnimator() { }
 
+        public bool Configure(Emberwild.AI.Enemy.Ability.AnimationProfileDefinition profile) => true;
+        public void PlaySemanticAction(string semanticKey) { }
+        public void SetSemanticState(string semanticKey, bool active) { }
         public void SetMoveSpeed(float normalizedSpeed) { }
-        public void PlayAction(EnemyAction action) { }
-        public void SetState(EnemyStateFlag state, bool active) { }
         public void SetDead(bool dead) { }
     }
 }

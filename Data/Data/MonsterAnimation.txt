@@ -1,0 +1,86 @@
+{
+  "1": {
+    "TID": 2001,
+    "BindingIndex": 0,
+    "SemanticKey": "action.melee",
+    "BindingType": "Trigger",
+    "ParameterName": "Melee"
+  },
+  "2": {
+    "TID": 2001,
+    "BindingIndex": 1,
+    "SemanticKey": "action.ranged",
+    "BindingType": "Trigger",
+    "ParameterName": "RangedAttack"
+  },
+  "3": {
+    "TID": 2001,
+    "BindingIndex": 2,
+    "SemanticKey": "action.take_damage",
+    "BindingType": "Trigger",
+    "ParameterName": "TakeDamage"
+  },
+  "4": {
+    "TID": 2001,
+    "BindingIndex": 3,
+    "SemanticKey": "state.roll",
+    "BindingType": "Bool",
+    "ParameterName": "Dash"
+  },
+  "5": {
+    "TID": 2001,
+    "BindingIndex": 4,
+    "SemanticKey": "state.guard",
+    "BindingType": "Bool",
+    "ParameterName": "Stance"
+  },
+  "6": {
+    "TID": 2002,
+    "BindingIndex": 0,
+    "SemanticKey": "action.melee",
+    "BindingType": "Trigger",
+    "ParameterName": "Melee"
+  },
+  "7": {
+    "TID": 2002,
+    "BindingIndex": 1,
+    "SemanticKey": "action.heavy",
+    "BindingType": "Trigger",
+    "ParameterName": "Heavy"
+  },
+  "8": {
+    "TID": 2002,
+    "BindingIndex": 2,
+    "SemanticKey": "action.pounce",
+    "BindingType": "Trigger",
+    "ParameterName": "Pounce"
+  },
+  "10": {
+    "TID": 2002,
+    "BindingIndex": 4,
+    "SemanticKey": "action.ranged",
+    "BindingType": "Trigger",
+    "ParameterName": "RangedAttack"
+  },
+  "11": {
+    "TID": 2002,
+    "BindingIndex": 5,
+    "SemanticKey": "action.spell",
+    "BindingType": "Trigger",
+    "ParameterName": "Spell"
+  },
+  "12": {
+    "TID": 2002,
+    "BindingIndex": 6,
+    "SemanticKey": "action.alert",
+    "BindingType": "Trigger",
+    "ParameterName": "Alert"
+  },
+  "13": {
+    "TID": 2002,
+    "BindingIndex": 7,
+    "SemanticKey": "action.take_damage",
+    "BindingType": "Trigger",
+    "ParameterName": "TakeDamage"
+  }
+}
