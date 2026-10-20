@@ -689,7 +689,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47607eac337964d4eb8345056dfcb070, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnTid: 2002
+  spawnTid: 2003
   spawnInterval: 3
   maxEnemies: 1
   spawnRadius: 5
