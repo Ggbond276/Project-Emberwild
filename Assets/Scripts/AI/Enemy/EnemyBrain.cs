@@ -52,49 +52,79 @@ namespace Emberwild.AI.Enemy
         private float _staggerEndsAt;
         private int _lastTid;
 
-        /// <summary>怪物共享黑板，包含目标、距离、血量和最近受击时间。</summary>
+        /// <summary>
+        /// 怪物共享黑板，包含目标、距离、血量和最近受击时间。
+        /// </summary>
         public EnemyBlackboard BB { get; } = new EnemyBlackboard();
 
-        /// <summary>供能力上下文访问的黑板别名。</summary>
+        /// <summary>
+        /// 供能力上下文访问的黑板别名。
+        /// </summary>
         public EnemyBlackboard Blackboard => BB;
 
-        /// <summary>自动解析到的寻路移动组件。</summary>
+        /// <summary>
+        /// 自动解析到的寻路移动组件。
+        /// </summary>
         public CustomNavAgent Agent => _agent;
 
-        /// <summary>自动解析到的感知组件。</summary>
+        /// <summary>
+        /// 自动解析到的感知组件。
+        /// </summary>
         public EnemyPerception Perception => _perception;
 
-        /// <summary>动画端口；未配置有效适配器时返回空实现。</summary>
+        /// <summary>
+        /// 动画端口；未配置有效适配器时返回空实现。
+        /// </summary>
         public IEnemyAnimator Animator => _animator ?? NullEnemyAnimator.Instance;
 
-        /// <summary>怪物实体与伤害数据桥接组件。</summary>
+        /// <summary>
+        /// 怪物实体与伤害数据桥接组件。
+        /// </summary>
         public EnemyEntity Entity => _entity;
 
-        /// <summary>能力执行器使用的攻击事件发布组件。</summary>
+        /// <summary>
+        /// 能力执行器使用的攻击事件发布组件。
+        /// </summary>
         public EnemyCombat Combat => _combat;
 
-        /// <summary>怪物的当前战斗属性。</summary>
+        /// <summary>
+        /// 怪物的当前战斗属性。
+        /// </summary>
         public CombatAttribute Attribute => _entity != null ? _entity.Attribute : null;
 
-        /// <summary>能力上下文使用的世界变换。</summary>
+        /// <summary>
+        /// 能力上下文使用的世界变换。
+        /// </summary>
         public Transform Transform => transform;
 
-        /// <summary>当前加载的统一怪物定义。</summary>
+        /// <summary>
+        /// 当前加载的统一怪物定义。
+        /// </summary>
         public MonsterAIDefinition Definition => _definition;
 
-        /// <summary>当前执行中的能力 ID。</summary>
+        /// <summary>
+        /// 当前执行中的能力 ID。
+        /// </summary>
         public string CurrentAbilityId => _abilities != null ? _abilities.ActiveAbilityId : string.Empty;
 
-        /// <summary>当前 HSM 模式名称，用于调试显示。</summary>
+        /// <summary>
+        /// 当前 HSM 模式名称，用于调试显示。
+        /// </summary>
         public string CurrentMode => _mode.ToString();
 
-        /// <summary>当前怪物的奔跑速度。</summary>
+        /// <summary>
+        /// 当前怪物的奔跑速度。
+        /// </summary>
         public float RunSpeed => _definition != null ? _definition.runSpeed : 4f;
 
-        /// <summary>当前怪物的受击硬直时间。</summary>
+        /// <summary>
+        /// 当前怪物的受击硬直时间。
+        /// </summary>
         public float HitStunDuration => _definition != null ? _definition.hitStunDuration : 0.4f;
 
-        /// <summary>将当前实际速度归一化到 0 到 1，用于 Animator 移动混合。</summary>
+        /// <summary>
+        /// 将当前实际速度归一化到 0 到 1，用于 Animator 移动混合。
+        /// </summary>
         public float NormalizedSpeed
         {
             get
@@ -104,7 +134,9 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>自动补齐本地组件、解析动画端口并准备运行时定义。</summary>
+        /// <summary>
+        /// 自动补齐本地组件、解析动画端口并准备运行时定义。
+        /// </summary>
         private void Awake()
         {
             ResolveComponents();
@@ -114,9 +146,12 @@ namespace Emberwild.AI.Enemy
             ConfigureRuntime(_entity != null ? _entity.TID : 0);
         }
 
-        /// <summary>完成必要依赖和战斗数据校验后进入初始待机模式。</summary>
+        /// <summary>
+        /// 完成必要依赖和战斗数据校验后进入初始待机模式。
+        /// </summary>
         private void Start()
         {
+            if (_initialized) return;
             if (_startupFailed) return;
             if (_agent == null || _perception == null || _entity == null || _combat == null)
             {
@@ -139,39 +174,85 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
-        /// 由 Spawner 在 Start 前调用，用 TID 覆盖 Prefab 默认值并重新装配运行时。
+        /// 将池对象恢复成一只刚刚出生的怪物，并按 TID 重新装配全部运行时状态。
         /// </summary>
-        public void InitializeFromTid(int tid)
+        /// <param name="tid">本次出生要使用的怪物 TID。</param>
+        /// <returns>成功完成数据和组件重置时返回 true。</returns>
+        public bool PrepareForSpawn(int tid)
         {
-            if (tid <= 0) return;
             _lastTid = tid;
-            _startupFailed = false;
-            enabled = true;
-            if (_entity != null) _entity.SetTid(tid);
-            ResolveComponents();
-            ResolveAnimator();
-            ConfigureRuntime(tid);
-
-            if (_initialized && !_startupFailed)
+            if (tid <= 0)
             {
-                if (!MonsterAIDefinitionValidator.ValidateCombatLinks(_definition, tid, out string combatError))
-                {
-                    FailStartup(combatError);
-                    return;
-                }
-                _abilities.Abort();
-                EnterIdle();
+                FailStartup($"invalid spawn TID {tid}.");
+                return false;
             }
+
+            _startupFailed = false;
+            _initialized = false;
+            enabled = true;
+            ResolveComponents();
+            if (_agent == null || _perception == null || _entity == null || _combat == null)
+            {
+                FailStartup("required local components are missing during pool spawn.");
+                return false;
+            }
+
+            ResolveAnimator();
+            if (_startupFailed) return false;
+
+            _abilities?.Abort();
+            BB.ResetRuntime();
+            _staggerEndsAt = 0f;
+            _debugMode = string.Empty;
+            _debugAbility = string.Empty;
+            _debugTarget = string.Empty;
+            _debugDistance = 0f;
+            _debugHpRatio = 1f;
+            _debugSource = string.Empty;
+            _debugDecision = string.Empty;
+            _debugMove = string.Empty;
+
+            _agent.enabled = true;
+            _perception.enabled = true;
+            _combat.enabled = true;
+            _entity.enabled = true;
+            _agent.ResetForSpawn();
+            _perception.ResetForSpawn();
+            Animator.ResetForSpawn();
+
+            if (!_entity.PrepareForSpawn(tid))
+            {
+                FailStartup($"failed to initialize entity data for TID {tid}.");
+                return false;
+            }
+
+            ConfigureRuntime(tid);
+            if (_startupFailed) return false;
+
+            if (!MonsterAIDefinitionValidator.ValidateCombatLinks(_definition, tid, out string combatError))
+            {
+                FailStartup(combatError);
+                return false;
+            }
+
+            _initialized = true;
+            EnterIdle();
+            AppLog.Info("Enemy", $"{name}: pooled spawn ready TID={tid}");
+            return true;
         }
 
-        /// <summary>订阅怪物受伤和死亡事件。</summary>
+        /// <summary>
+        /// 订阅怪物受伤和死亡事件。
+        /// </summary>
         private void OnEnable()
         {
             EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
             EventBus.Subscribe<EnemyDiedEvent>(OnDied);
         }
 
-        /// <summary>取消事件订阅并清理正在执行的能力。</summary>
+        /// <summary>
+        /// 取消事件订阅并清理正在执行的能力。
+        /// </summary>
         private void OnDisable()
         {
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
@@ -179,7 +260,9 @@ namespace Emberwild.AI.Enemy
             _abilities?.Abort();
         }
 
-        /// <summary>每帧更新感知、短板中断、能力执行或行为决策。</summary>
+        /// <summary>
+        /// 每帧更新感知、短板中断、能力执行或行为决策。
+        /// </summary>
         private void Update()
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
@@ -211,7 +294,9 @@ namespace Emberwild.AI.Enemy
             EvaluateBehavior();
         }
 
-        /// <summary>把关键运行状态写入 Inspector，便于现场调试。</summary>
+        /// <summary>
+        /// 把关键运行状态写入 Inspector，便于现场调试。
+        /// </summary>
         private void LateUpdate()
         {
             if (!_initialized) return;
@@ -227,7 +312,9 @@ namespace Emberwild.AI.Enemy
                 : "none";
         }
 
-        /// <summary>执行行为规则，并把选择结果转换为能力、追击或待机。</summary>
+        /// <summary>
+        /// 执行行为规则，并把选择结果转换为能力、追击或待机。
+        /// </summary>
         private void EvaluateBehavior()
         {
             var decision = _behavior.Select(BB, _abilities, Attribute, Time.time);
@@ -254,7 +341,11 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>优先尝试直接能力 ID，其次尝试能力槽。</summary>
+        /// <summary>
+        /// 优先尝试直接能力 ID，其次尝试能力槽。
+        /// </summary>
+        /// <param name="decision">行为选择器返回的本次决策。</param>
+        /// <returns>成功激活能力时返回 true。</returns>
         private bool TryActivateDecision(BehaviourDecision decision)
         {
             if (!string.IsNullOrWhiteSpace(decision.AbilityId)
@@ -264,7 +355,9 @@ namespace Emberwild.AI.Enemy
                 && _abilities.TryActivateSlot(decision.Slot);
         }
 
-        /// <summary>进入待机模式并锁定不必要的位移。</summary>
+        /// <summary>
+        /// 进入待机模式并锁定不必要的位移。
+        /// </summary>
         private void EnterIdle()
         {
             if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
@@ -273,7 +366,9 @@ namespace Emberwild.AI.Enemy
             Animator.SetMoveSpeed(0f);
         }
 
-        /// <summary>进入战斗追击模式并持续更新寻路目的地。</summary>
+        /// <summary>
+        /// 进入战斗追击模式并持续更新寻路目的地。
+        /// </summary>
         private void EnterChase()
         {
             if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
@@ -289,7 +384,9 @@ namespace Emberwild.AI.Enemy
             Animator.SetMoveSpeed(NormalizedSpeed);
         }
 
-        /// <summary>中断当前能力并进入受击硬直。</summary>
+        /// <summary>
+        /// 中断当前能力并进入受击硬直。
+        /// </summary>
         private void EnterStagger()
         {
             if (_mode == RuntimeMode.Dead) return;
@@ -304,7 +401,9 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>硬直结束后根据是否仍有目标恢复追击或待机。</summary>
+        /// <summary>
+        /// 硬直结束后根据是否仍有目标恢复追击或待机。
+        /// </summary>
         private void ResumeAfterInterrupt()
         {
             if (IsDead())
@@ -317,7 +416,9 @@ namespace Emberwild.AI.Enemy
             else EnterIdle();
         }
 
-        /// <summary>进入不可逆死亡模式并执行死亡能力。</summary>
+        /// <summary>
+        /// 进入不可逆死亡模式并执行死亡能力。
+        /// </summary>
         private void EnterDead()
         {
             if (_mode == RuntimeMode.Dead) return;
@@ -338,7 +439,10 @@ namespace Emberwild.AI.Enemy
             _perception.enabled = false;
         }
 
-        /// <summary>记录伤害数据并触发受击状态。</summary>
+        /// <summary>
+        /// 记录伤害数据并触发受击状态。
+        /// </summary>
+        /// <param name="evt">包含受伤怪物、伤害值和剩余血量的受击事件。</param>
         private void OnDamaged(EnemyDamagedEvent evt)
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
@@ -349,7 +453,10 @@ namespace Emberwild.AI.Enemy
             EnterStagger();
         }
 
-        /// <summary>立即切换到死亡状态。</summary>
+        /// <summary>
+        /// 立即切换到死亡状态。
+        /// </summary>
+        /// <param name="evt">包含死亡怪物战斗实体引用的死亡事件。</param>
         private void OnDied(EnemyDiedEvent evt)
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
@@ -357,7 +464,10 @@ namespace Emberwild.AI.Enemy
             EnterDead();
         }
 
-        /// <summary>检查实体属性是否已经死亡。</summary>
+        /// <summary>
+        /// 检查实体属性是否已经死亡。
+        /// </summary>
+        /// <returns>当前生命值状态为死亡时返回 true。</returns>
         private bool IsDead()
         {
             return _entity != null && _entity.Attribute != null && _entity.Attribute.IsDead;
@@ -366,6 +476,7 @@ namespace Emberwild.AI.Enemy
         /// <summary>
         /// 从外联表仓库加载怪物定义，然后配置感知、移动、动画、能力和行为。
         /// </summary>
+        /// <param name="tid">要从外联表加载的怪物 TID。</param>
         private void ConfigureRuntime(int tid)
         {
             _startupFailed = false;
@@ -414,7 +525,9 @@ namespace Emberwild.AI.Enemy
                 + $"rules={definition.behavior.Count} source=monster-tables");
         }
 
-        /// <summary>从当前 GameObject 获取所有必需的本地组件。</summary>
+        /// <summary>
+        /// 从当前 GameObject 获取所有必需的本地组件。
+        /// </summary>
         private void ResolveComponents()
         {
             if (_agent == null) _agent = GetComponent<CustomNavAgent>();
@@ -423,7 +536,9 @@ namespace Emberwild.AI.Enemy
             if (_combat == null) _combat = GetComponent<EnemyCombat>();
         }
 
-        /// <summary>查找动画端口，必要时在真实 Animator 对象上自动挂载适配器。</summary>
+        /// <summary>
+        /// 查找动画端口，必要时在真实 Animator 对象上自动挂载适配器。
+        /// </summary>
         private void ResolveAnimator()
         {
             if (_animator != null) return;
@@ -444,7 +559,10 @@ namespace Emberwild.AI.Enemy
             _animator = adapter;
         }
 
-        /// <summary>查找已存在的 IEnemyAnimator 实现。</summary>
+        /// <summary>
+        /// 查找已存在的 IEnemyAnimator 实现。
+        /// </summary>
+        /// <returns>找到的动画适配器；没有实现时返回 null。</returns>
         private IEnemyAnimator FindAnimator()
         {
             foreach (var component in GetComponents<MonoBehaviour>())
@@ -454,7 +572,10 @@ namespace Emberwild.AI.Enemy
             return null;
         }
 
-        /// <summary>记录不可恢复错误并停止怪物 AI。</summary>
+        /// <summary>
+        /// 记录不可恢复错误并停止怪物 AI。
+        /// </summary>
+        /// <param name="reason">导致启动失败的详细原因。</param>
         private void FailStartup(string reason)
         {
             _startupFailed = true;

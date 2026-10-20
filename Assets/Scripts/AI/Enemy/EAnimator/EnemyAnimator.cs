@@ -26,7 +26,9 @@ namespace Emberwild.AI.Enemy.EAnimator
 
         private int _moveSpeedHash;
         private int _deadHash;
-        /// <summary>组件启动时自动查找动画控制器。</summary>
+        /// <summary>
+        /// 组件启动时自动查找动画控制器。
+        /// </summary>
         private void Awake()
         {
             ResolveAnimator();
@@ -36,6 +38,8 @@ namespace Emberwild.AI.Enemy.EAnimator
         /// 根据怪物动画配置重建语义绑定，并验证每个参数的名称和类型。
         /// 返回 false 表示配置存在不可用参数。
         /// </summary>
+        /// <param name="profile">包含移动、死亡和动作语义绑定的动画配置。</param>
+        /// <returns>所有必要参数都存在且类型正确时返回 true。</returns>
         public bool Configure(AnimationProfileDefinition profile)
         {
             _bindings.Clear();
@@ -133,7 +137,10 @@ namespace Emberwild.AI.Enemy.EAnimator
             return valid;
         }
 
-        /// <summary>播放一次性语义动作，例如攻击、受击或警戒。</summary>
+        /// <summary>
+        /// 播放一次性语义动作，例如攻击、受击或警戒。
+        /// </summary>
+        /// <param name="semanticKey">与具体 Animator 参数解耦的动作语义键。</param>
         public void PlaySemanticAction(string semanticKey)
         {
             if (_animator == null || string.IsNullOrWhiteSpace(semanticKey)) return;
@@ -158,7 +165,11 @@ namespace Emberwild.AI.Enemy.EAnimator
             }
         }
 
-        /// <summary>开启或关闭持续语义状态，例如滚动和防御姿态。</summary>
+        /// <summary>
+        /// 开启或关闭持续语义状态，例如滚动和防御姿态。
+        /// </summary>
+        /// <param name="semanticKey">与具体 Animator 参数解耦的状态语义键。</param>
+        /// <param name="active">true 表示启用该状态；false 表示关闭。</param>
         public void SetSemanticState(string semanticKey, bool active)
         {
             if (_animator == null || string.IsNullOrWhiteSpace(semanticKey)) return;
@@ -174,28 +185,76 @@ namespace Emberwild.AI.Enemy.EAnimator
                 _animator.CrossFade(binding.Hash, 0.1f, 0);
         }
 
-        /// <summary>设置移动动画混合值，范围会被限制在 0 到 1。</summary>
+        /// <summary>
+        /// 设置移动动画混合值，范围会被限制在 0 到 1。
+        /// </summary>
+        /// <param name="normalizedSpeed">归一化移动速度。</param>
         public void SetMoveSpeed(float normalizedSpeed)
         {
             if (_animator == null || _moveSpeedHash == 0) return;
             _animator.SetFloat(_moveSpeedHash, Mathf.Clamp01(normalizedSpeed));
         }
 
-        /// <summary>设置 Animator 的死亡布尔参数。</summary>
+        /// <summary>
+        /// 设置 Animator 的死亡布尔参数。
+        /// </summary>
+        /// <param name="dead">true 表示进入死亡动画；false 表示恢复正常状态。</param>
         public void SetDead(bool dead)
         {
             if (_animator == null || _deadHash == 0) return;
             _animator.SetBool(_deadHash, dead);
         }
 
-        /// <summary>在当前怪物层级中自动查找 Animator。</summary>
+        /// <summary>
+        /// 恢复控制器默认状态，并清除池复用可能残留的 Trigger、Bool 和 Float 参数。
+        /// </summary>
+        public void ResetForSpawn()
+        {
+            ResolveAnimator();
+            if (_animator == null) return;
+
+            _animator.Rebind();
+            _animator.Update(0f);
+
+            foreach (BindingRuntime binding in _bindings.Values)
+            {
+                switch (binding.Type)
+                {
+                    case AnimationBindingType.Trigger:
+                        _animator.ResetTrigger(binding.Hash);
+                        break;
+                    case AnimationBindingType.Bool:
+                        _animator.SetBool(binding.Hash, false);
+                        break;
+                    case AnimationBindingType.Float:
+                        _animator.SetFloat(binding.Hash, 0f);
+                        break;
+                }
+            }
+
+            if (_moveSpeedHash != 0)
+                _animator.SetFloat(_moveSpeedHash, 0f);
+            if (_deadHash != 0)
+                _animator.SetBool(_deadHash, false);
+        }
+
+        /// <summary>
+        /// 在当前怪物层级中自动查找 Animator。
+        /// </summary>
         private void ResolveAnimator()
         {
             if (_animator != null) return;
             _animator = GetComponentInChildren<Animator>(true);
         }
 
-        /// <summary>根据预期类型解析参数哈希。</summary>
+        /// <summary>
+        /// 根据预期类型解析 Animator 参数哈希。
+        /// </summary>
+        /// <param name="parameterName">动画配置中填写的真实参数名称。</param>
+        /// <param name="expected">该语义要求的 Animator 参数类型。</param>
+        /// <param name="parameters">当前 Animator Controller 的全部参数类型表。</param>
+        /// <param name="hash">解析成功时输出的 Animator 参数哈希。</param>
+        /// <returns>参数存在且类型匹配时返回 true。</returns>
         private static bool TryResolve(
             string parameterName,
             AnimatorControllerParameterType expected,
@@ -210,9 +269,15 @@ namespace Emberwild.AI.Enemy.EAnimator
         }
 
 #if UNITY_EDITOR
+        /// <summary>
+        /// 在 Inspector 右键菜单中测试近战动作语义映射。
+        /// </summary>
         [ContextMenu("Test: Melee")]
         private void TestMelee() => PlaySemanticAction(AnimationSemantics.Melee);
 
+        /// <summary>
+        /// 在 Inspector 右键菜单中测试受击动作语义映射。
+        /// </summary>
         [ContextMenu("Test: Take Damage")]
         private void TestTakeDamage() => PlaySemanticAction(AnimationSemantics.TakeDamage);
 #endif

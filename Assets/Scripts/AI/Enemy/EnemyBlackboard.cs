@@ -45,5 +45,16 @@ namespace Emberwild.AI.Enemy
         /// </summary>
         public float LastHitTime = -999f;
 
+        /// <summary>
+        /// 清空上一轮生命周期留下的目标、距离和受击数据，供池对象重新出生时使用。
+        /// </summary>
+        public void ResetRuntime()
+        {
+            Target = null;
+            DistanceToTarget = float.MaxValue;
+            CanSeeTarget = false;
+            HpRatio = 1f;
+            LastHitTime = -999f;
+        }
     }
 }

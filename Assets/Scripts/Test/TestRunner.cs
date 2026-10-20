@@ -2,6 +2,7 @@ using Emberwild.AI.Pathfinding;
 using Emberwild.CameraControl;
 using Emberwild.Character;
 using Emberwild.Combat;
+using Emberwild.Core.Pooling;
 using Emberwild.Data;
 using Emberwild.Define;
 using Emberwild.Input;
@@ -57,6 +58,8 @@ namespace Emberwild.Core.Test
 
             DataManager.Instance.Init();
             DataManager.Instance.Load();
+
+            ObjectPoolManager.Instance.Initialize();
 
             PlayerDataManager.Instance.Init();
             PlayerDataManager.Instance.LoadGame();

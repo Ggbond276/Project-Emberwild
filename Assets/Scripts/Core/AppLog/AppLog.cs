@@ -17,6 +17,7 @@ namespace Emberwild.Core.AppLog
             { "Input",    "#00FFFF" }, // 青色
             { "Resource", "#FFA500" }, // 橙色
             { "Combat",   "#FF4444" }, // 红色
+            { "Pool",     "#66E0FF" }, // 浅蓝色
         };
 
         public static void Info(string module, string message)

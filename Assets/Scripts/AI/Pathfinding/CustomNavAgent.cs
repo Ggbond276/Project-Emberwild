@@ -41,22 +41,47 @@ namespace Emberwild.AI.Pathfinding
         private float _stalledTime;
         private float _directFallbackUntil;
 
+        /// <summary>
+        /// 当前是否持有一个需要移动前往的目的地。
+        /// </summary>
         public bool HasDestination => _hasDestination;
+
+        /// <summary>
+        /// 当前移动是否被攻击、受击等状态锁定。
+        /// </summary>
         public bool IsMotionLocked => _motionLocked;
+
+        /// <summary>
+        /// 当前 A* 路径中剩余节点的数量。
+        /// </summary>
         public int PathNodeCount => _currentPath != null ? _currentPath.Count : 0;
+
+        /// <summary>
+        /// 当前 Rigidbody 的实际速度。
+        /// </summary>
         public Vector3 CurrentVelocity => _rb != null ? _rb.velocity : Vector3.zero;
+
+        /// <summary>
+        /// 当前寻路请求指定的最终世界坐标。
+        /// </summary>
         public Vector3 Destination => _destination;
 
-        /// <summary>移动锁：锁定期间不吃任何位移（含物理推挤），用于攻击/受击等定身场景。</summary>
+        /// <summary>
+        /// 移动锁：锁定期间不接收任何位移，用于攻击、受击和死亡等定身场景。
+        /// </summary>
         private bool _motionLocked;
 
-        /// <summary>基础约束：只冻结旋转，位置可动。</summary>
+        /// <summary>
+        /// 基础约束：只冻结旋转，位置可动。
+        /// </summary>
         private const RigidbodyConstraints BaseConstraints =
             RigidbodyConstraints.FreezeRotationX |
             RigidbodyConstraints.FreezeRotationY |
             RigidbodyConstraints.FreezeRotationZ;
 
-        /// <summary>锁定约束：在基础之上再冻结水平位移，Y 轴保留以维持重力。</summary>
+        /// <summary>
+        /// 锁定约束：在基础约束上再冻结水平位移，Y 轴保留以维持重力。
+        /// </summary>
         private const RigidbodyConstraints LockedConstraints =
             BaseConstraints |
             RigidbodyConstraints.FreezePositionX |
@@ -69,6 +94,9 @@ namespace Emberwild.AI.Pathfinding
         public float VelocityMagnitude => _rb.velocity.magnitude;
 
 
+        /// <summary>
+        /// 缓存 Rigidbody 并应用基础物理约束。
+        /// </summary>
         void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -79,6 +107,7 @@ namespace Emberwild.AI.Pathfinding
         /// 锁定/解锁移动。锁定后完全定在原地，不受自己的速度也不受外力推挤。
         /// 攻击、受击、施法、姿态这类"必须站住"的状态在 OnEnter 锁、OnExit 解锁。
         /// </summary>
+        /// <param name="locked">true 表示停止并冻结水平移动；false 表示恢复正常移动。</param>
         public void SetMotionLocked(bool locked)
         {
             if (_rb == null) return;
@@ -144,6 +173,11 @@ namespace Emberwild.AI.Pathfinding
             _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
         }
 
+        /// <summary>
+        /// 绕过 A*，直接沿指定方向设置水平速度，主要用于路径失败时的追击兜底。
+        /// </summary>
+        /// <param name="direction">期望移动的水平方向，Y 分量会被忽略。</param>
+        /// <param name="speed">沿该方向施加的水平移动速度。</param>
         public void SetDirectVelocity(Vector3 direction, float speed)
         {
             if (_rb == null || _motionLocked) return;
@@ -158,6 +192,35 @@ namespace Emberwild.AI.Pathfinding
             _rb.velocity = new Vector3(dir.x * speed, _rb.velocity.y, dir.z * speed);
         }
 
+        /// <summary>
+        /// 清除上一条生命周期的路径、速度和移动锁，供池对象重新出生时使用。
+        /// </summary>
+        public void ResetForSpawn()
+        {
+            if (_rb == null)
+                _rb = GetComponent<Rigidbody>();
+
+            _hasDestination = false;
+            _currentPath = null;
+            _destination = Vector3.zero;
+            _lastPathUpdateTime = 0f;
+            _noPathReported = false;
+            _stalledTime = 0f;
+            _directFallbackUntil = 0f;
+
+            if (_rb != null)
+            {
+                _rb.velocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+                _rb.constraints = BaseConstraints;
+            }
+
+            SetMotionLocked(true);
+        }
+
+        /// <summary>
+        /// 按固定物理帧更新寻路结果、航点切换和 Rigidbody 速度。
+        /// </summary>
         void FixedUpdate()
         {
             if (_motionLocked) return;
@@ -242,6 +305,9 @@ namespace Emberwild.AI.Pathfinding
             }
         }
 
+        /// <summary>
+        /// 在没有有效 A* 路径时，沿目标方向执行直接追击。
+        /// </summary>
         private void MoveDirectlyToDestination()
         {
             Vector3 direction = _destination - transform.position;

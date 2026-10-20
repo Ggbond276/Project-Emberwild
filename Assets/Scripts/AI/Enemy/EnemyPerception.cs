@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace Emberwild.AI.Enemy
 {
-    /// <summary>感知：定时扫描玩家并写入黑板。</summary>
+    /// <summary>
+    /// 感知：定时扫描玩家并写入黑板。
+    /// </summary>
     public class EnemyPerception : MonoBehaviour
     {
         [Tooltip("要搜索的目标层，留空自动使用 Player 层")]
@@ -18,7 +20,9 @@ namespace Emberwild.AI.Enemy
 
         public Transform CurrentTarget => _currentTarget;
 
-        /// <summary>未配置目标层时自动取 Player，避免 OverlapSphere 扫 0 层永远返回空。</summary>
+        /// <summary>
+        /// 未配置目标层时自动取 Player，避免 OverlapSphere 扫 0 层永远返回空。
+        /// </summary>
         private void EnsureTargetLayer()
         {
             if (_targetLayer.value != 0) return;
@@ -34,11 +38,18 @@ namespace Emberwild.AI.Enemy
             }
         }
 
+        /// <summary>
+        /// 初始化感知组件需要的目标层。
+        /// </summary>
         private void Awake()
         {
             EnsureTargetLayer();
         }
 
+        /// <summary>
+        /// 按扫描间隔更新目标，并把感知结果写入怪物黑板。
+        /// </summary>
+        /// <param name="bb">当前怪物共享的黑板数据。</param>
         public void Tick(EnemyBlackboard bb)
         {
             if(Time.time - _lastScanTime >=  _scanInterval)
@@ -67,7 +78,9 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>球形扫描，取最近的有效战斗实体。</summary>
+        /// <summary>
+        /// 球形扫描，取最近的有效战斗实体。
+        /// </summary>
         private void Scan()
         {
             EnsureTargetLayer();
@@ -104,7 +117,12 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>外部注入配置。</summary>
+        /// <summary>
+        /// 从怪物外联表注入感知距离和扫描频率。
+        /// </summary>
+        /// <param name="sightRange">首次发现目标时使用的视野半径。</param>
+        /// <param name="loseTargetRange">已经锁定目标后允许保持锁定的距离。</param>
+        /// <param name="scanInterval">两次主动扫描之间等待的秒数。</param>
         public void Configure(float sightRange, float loseTargetRange, float scanInterval)
         {
             _sightRange = sightRange;
@@ -112,7 +130,19 @@ namespace Emberwild.AI.Enemy
             _scanInterval = scanInterval;
         }
 
-        /// <summary>编辑器可视化：黄圈 = 视野，蓝圈 = 丢失目标。</summary>
+        /// <summary>
+        /// 清除上一条生命周期的目标和扫描时间，确保池对象从空感知状态开始。
+        /// </summary>
+        public void ResetForSpawn()
+        {
+            EnsureTargetLayer();
+            _currentTarget = null;
+            _lastScanTime = -999f;
+        }
+
+        /// <summary>
+        /// 编辑器可视化：黄圈表示视野，蓝圈表示丢失目标距离。
+        /// </summary>
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;

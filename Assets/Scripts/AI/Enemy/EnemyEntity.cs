@@ -30,6 +30,7 @@ namespace Emberwild.AI.Enemy
 
 
         private CharacterDefine _define;
+        private bool _runtimeInitialized;
 
         public int TID => _define != null ? _define.TID : _tid;
         public string EnemyName => _define != null ? _define.Name : gameObject.name;
@@ -41,6 +42,9 @@ namespace Emberwild.AI.Enemy
 
 
 
+        /// <summary>
+        /// 缓存当前 GameObject 上的战斗属性组件。
+        /// </summary>
         private void Awake()
         {
             if (_combatAttr == null)
@@ -50,28 +54,52 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
-        /// 覆盖 Prefab 上的默认 TID，供 Spawner 在 Start 前按配置表选怪。
+        /// 按 TID 重新加载实体定义并恢复满血状态。
+        /// 池对象每次出生都必须调用，不能依赖只执行一次的 Start。
         /// </summary>
-        /// <param name="tid">CharacterDefine 中的怪物 TID。</param>
-        public void SetTid(int tid)
+        /// <param name="tid">要加载的 CharacterDefine 怪物 TID。</param>
+        /// <returns>数据加载并初始化成功后返回 true。</returns>
+        public bool PrepareForSpawn(int tid)
         {
             _tid = tid;
             _define = null;
-        }
+            enabled = true;
 
+            if (_combatAttr == null)
+                _combatAttr = GetComponent<CombatAttribute>();
 
-        private void Start()
-        {
+            if (_combatAttr == null)
+            {
+                AppLog.Error("Enemy", $"{name}: CombatAttribute is missing.");
+                return false;
+            }
+
             LoadDefine();
             if (_define == null)
             {
                 AppLog.Error("Enemy", $"{name}: CharacterDefine TID={_tid} is missing.");
-                enabled = false;
-                return;
+                return false;
             }
+
+            _combatAttr.enabled = true;
             _combatAttr.Initialize(MaxHp, MaxHp, BaseAD, BaseDEF);
+            _runtimeInitialized = true;
+            return true;
         }
 
+        /// <summary>
+        /// 处理未经过刷怪器、直接放在场景中的怪物初始化。
+        /// </summary>
+        private void Start()
+        {
+            if (_runtimeInitialized) return;
+            if (!PrepareForSpawn(_tid))
+                enabled = false;
+        }
+
+        /// <summary>
+        /// 从 DataManager 读取当前 TID 对应的角色配置。
+        /// </summary>
         private void LoadDefine()
         {
             var dm = DataManager.Instance;
