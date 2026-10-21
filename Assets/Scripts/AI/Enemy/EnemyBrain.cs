@@ -98,7 +98,9 @@ namespace Emberwild.AI.Enemy
 
         #region Unity 生命周期与装配 (Lifecycle & Setup)
 
-        /// <summary>解析本地组件并加载当前 TID 的怪物配置。</summary>
+        /// <summary>
+        /// 解析本地组件并加载当前 TID 的怪物配置。
+        /// </summary>
         private void Awake()
         {
             ResolveComponents();
@@ -108,7 +110,9 @@ namespace Emberwild.AI.Enemy
             ConfigureRuntime(_entity != null ? _entity.TID : 0);
         }
 
-        /// <summary>校验运行时依赖并进入待机状态。</summary>
+        /// <summary>
+        /// 校验运行时依赖并进入待机状态。
+        /// </summary>
         private void Start()
         {
             if (_initialized) return;
@@ -139,7 +143,9 @@ namespace Emberwild.AI.Enemy
             EnterIdle();
         }
 
-        /// <summary>重置池对象并按 TID 重新初始化怪物。</summary>
+        /// <summary>
+        /// 重置池对象并按 TID 重新初始化怪物。
+        /// </summary>
         public bool PrepareForSpawn(int tid)
         {
             _lastTid = tid;
@@ -201,7 +207,9 @@ namespace Emberwild.AI.Enemy
             return true;
         }
 
-        /// <summary>按 TID 向各运行时组件注入怪物配置。</summary>
+        /// <summary>
+        /// 按 TID 向各运行时组件注入怪物配置。
+        /// </summary>
         private void ConfigureRuntime(int tid)
         {
             _startupFailed = false;
@@ -259,7 +267,9 @@ namespace Emberwild.AI.Enemy
                 + $"rules={definition.behavior.Count} source=monster-tables");
         }
 
-        /// <summary>获取怪物根节点上的核心组件。</summary>
+        /// <summary>
+        /// 获取怪物根节点上的核心组件。
+        /// </summary>
         private void ResolveComponents()
         {
             if (_agent == null) _agent = GetComponent<CustomNavAgent>();
@@ -268,7 +278,9 @@ namespace Emberwild.AI.Enemy
             if (_combat == null) _combat = GetComponent<EnemyCombat>();
         }
 
-        /// <summary>查找动画适配器；缺失时将 EnemyAnimator 挂载到角色 Animator 上。</summary>
+        /// <summary>
+        /// 查找动画适配器；缺失时将 EnemyAnimator 挂载到角色 Animator 上。
+        /// </summary>
         private void ResolveAnimator()
         {
             if (_animator != null) return;
@@ -290,7 +302,9 @@ namespace Emberwild.AI.Enemy
             _animator = adapter;
         }
 
-        /// <summary>查找怪物根节点上的动画适配器实现。</summary>
+        /// <summary>
+        /// 查找怪物根节点上的动画适配器实现。
+        /// </summary>
         private IEnemyAnimator FindAnimator()
         {
             foreach (var component in GetComponents<MonoBehaviour>())
@@ -301,7 +315,9 @@ namespace Emberwild.AI.Enemy
             return null;
         }
 
-        /// <summary>清空 Inspector 中的调试快照。</summary>
+        /// <summary>
+        /// 清空 Inspector 中的调试快照。
+        /// </summary>
         private void ResetDebugSnapshot()
         {
             _debugMode = string.Empty;
@@ -314,7 +330,9 @@ namespace Emberwild.AI.Enemy
             _debugMove = string.Empty;
         }
 
-        /// <summary>记录启动错误并停止怪物 AI。</summary>
+        /// <summary>
+        /// 记录启动错误并停止怪物 AI。
+        /// </summary>
         private void FailStartup(string reason)
         {
             _startupFailed = true;
@@ -326,7 +344,9 @@ namespace Emberwild.AI.Enemy
 
         #region 每帧心跳与大脑决策 (Update & Thinking)
 
-        /// <summary>每帧刷新感知并推进当前怪物行为。</summary>
+        /// <summary>
+        /// 每帧刷新感知并推进当前怪物行为。
+        /// </summary>
         private void Update()
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
@@ -360,7 +380,9 @@ namespace Emberwild.AI.Enemy
             EvaluateBehavior();
         }
 
-        /// <summary>更新 Inspector 调试快照。</summary>
+        /// <summary>
+        /// 更新 Inspector 调试快照。
+        /// </summary>
         private void LateUpdate()
         {
             if (!_initialized) return;
@@ -377,7 +399,9 @@ namespace Emberwild.AI.Enemy
                 : "none";
         }
 
-        /// <summary>执行行为规则并切换到对应动作。</summary>
+        /// <summary>
+        /// 执行行为规则并切换到对应动作。
+        /// </summary>
         private void EvaluateBehavior()
         {
             var decision = _behavior.Select(BB, _abilities, Attribute, Time.time);
@@ -409,7 +433,9 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>尝试激活决策指定的能力。</summary>
+        /// <summary>
+        /// 尝试激活决策指定的能力。
+        /// </summary>
         private bool TryActivateDecision(BehaviourDecision decision)
         {
             if (!string.IsNullOrWhiteSpace(decision.AbilityId)
@@ -422,7 +448,9 @@ namespace Emberwild.AI.Enemy
                 && _abilities.TryActivateSlot(decision.Slot);
         }
 
-        /// <summary>返回实体是否已经死亡。</summary>
+        /// <summary>
+        /// 返回实体是否已经死亡。
+        /// </summary>
         private bool IsDead()
         {
             return _entity != null
