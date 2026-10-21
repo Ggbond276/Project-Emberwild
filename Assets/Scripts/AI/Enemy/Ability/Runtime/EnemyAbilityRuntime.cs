@@ -75,15 +75,15 @@ namespace Emberwild.AI.Enemy.Ability
         }
 
         /// <summary>判断指定能力是否已经冷却完成。</summary>
-        public bool IsAbilityReady(string abilityId, float cooldown)
+        public bool IsAbilityReady(string abilityId)
         {
             if (string.IsNullOrWhiteSpace(abilityId)) return false;
-            if (!_byId.ContainsKey(abilityId)) return false;
-            return Time.time - GetLastUsed(abilityId) >= Mathf.Max(0f, cooldown);
+            return _byId.TryGetValue(abilityId, out var ability)
+                && IsCooldownReady(ability);
         }
 
         /// <summary>判断槽位中是否存在可用能力。</summary>
-        public bool IsSlotReady(string slot, float cooldown)
+        public bool IsSlotReady(string slot)
         {
             if (string.IsNullOrWhiteSpace(slot)
                 || !_bySlot.TryGetValue(slot, out var list))
@@ -91,13 +91,9 @@ namespace Emberwild.AI.Enemy.Ability
                 return false;
             }
 
-            float now = Time.time;
             foreach (var ability in list)
             {
-                if (ability.oncePerCombat && _usedOnce.Contains(ability.id)) continue;
-                float effectiveCooldown = Mathf.Max(cooldown, ability.cooldown);
-                if (now - GetLastUsed(ability.id) >= effectiveCooldown && IsInRange(ability))
-                    return true;
+                if (CanActivate(ability)) return true;
             }
             return false;
         }
@@ -123,22 +119,56 @@ namespace Emberwild.AI.Enemy.Ability
         /// <summary>按能力 ID 尝试激活能力。</summary>
         public bool TryActivateAbility(string abilityId)
         {
-            if (IsActive || string.IsNullOrWhiteSpace(abilityId)) return false;
-            if (!_byId.TryGetValue(abilityId, out var ability)) return false;
-            return TryActivate(ability);
+            var ability = FindExecutableAbility(abilityId, string.Empty);
+            return ability != null && StartAbility(ability);
         }
 
         /// <summary>在槽位中按优先级激活一个可用能力。</summary>
         public bool TryActivateSlot(string slot)
         {
-            if (IsActive || string.IsNullOrWhiteSpace(slot)) return false;
-            if (!_bySlot.TryGetValue(slot, out var abilities)) return false;
+            var ability = FindExecutableAbility(string.Empty, slot);
+            return ability != null && StartAbility(ability);
+        }
+
+        /// <summary>查找当前可执行的能力，但不启动它。</summary>
+        public AbilityDefinition FindExecutableAbility(string abilityId, string slot)
+        {
+            if (IsActive) return null;
+
+            if (!string.IsNullOrWhiteSpace(abilityId))
+            {
+                if (_byId.TryGetValue(abilityId, out var directAbility)
+                    && CanActivate(directAbility))
+                {
+                    return directAbility;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(slot)
+                || !_bySlot.TryGetValue(slot, out var abilities))
+            {
+                return null;
+            }
 
             foreach (var ability in abilities)
             {
-                if (CanActivate(ability)) return TryActivate(ability);
+                if (CanActivate(ability)) return ability;
             }
-            return false;
+            return null;
+        }
+
+        /// <summary>启动规则选择器已经解析完成的能力。</summary>
+        public bool TryStartResolvedAbility(AbilityDefinition ability)
+        {
+            if (IsActive || ability == null || string.IsNullOrWhiteSpace(ability.id))
+                return false;
+            if (!_byId.TryGetValue(ability.id, out var registered)
+                || !ReferenceEquals(registered, ability))
+            {
+                return false;
+            }
+
+            return StartAbility(ability);
         }
 
         /// <summary>中断当前能力并执行清理。</summary>
@@ -147,11 +177,9 @@ namespace Emberwild.AI.Enemy.Ability
             StopActive();
         }
 
-        /// <summary>检查条件并启动指定能力。</summary>
-        private bool TryActivate(AbilityDefinition ability)
+        /// <summary>创建执行器并启动指定能力。</summary>
+        private bool StartAbility(AbilityDefinition ability)
         {
-            if (!CanActivate(ability)) return false;
-
             var executor = AbilityExecutorRegistry.Create(ability.executor);
             if (executor == null)
             {
@@ -176,9 +204,17 @@ namespace Emberwild.AI.Enemy.Ability
         /// <summary>检查能力是否满足冷却、次数和距离条件。</summary>
         private bool CanActivate(AbilityDefinition ability)
         {
-            if (ability.oncePerCombat && _usedOnce.Contains(ability.id)) return false;
-            if (Time.time - GetLastUsed(ability.id) < Mathf.Max(0f, ability.cooldown)) return false;
+            if (!IsCooldownReady(ability)) return false;
+            if (!AbilityExecutorRegistry.Contains(ability.executor)) return false;
             return IsInRange(ability);
+        }
+
+        /// <summary>判断能力冷却和一次性使用限制是否满足。</summary>
+        private bool IsCooldownReady(AbilityDefinition ability)
+        {
+            if (ability.oncePerCombat && _usedOnce.Contains(ability.id)) return false;
+            return Time.time - GetLastUsed(ability.id)
+                >= Mathf.Max(0f, ability.cooldown);
         }
 
         /// <summary>判断能力是否处于有效距离。</summary>

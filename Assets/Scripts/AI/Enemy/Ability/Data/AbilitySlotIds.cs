@@ -4,6 +4,7 @@ namespace Emberwild.AI.Enemy.Ability
     {
         #region 能力槽 ID 常量 (Ability Slot IDs)
         public const string PrimaryAttack = "primary_attack";
+        public const string SecondaryAttack = "secondary_attack";
         public const string HeavyAttack = "heavy_attack";
         public const string GapClose = "gap_close";
         public const string RangedAttack = "ranged_attack";

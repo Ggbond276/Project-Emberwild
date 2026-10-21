@@ -30,9 +30,9 @@ namespace Emberwild.AI.Enemy.Ability
                 [BehaviorConditions.InRange] = (c, bb, a, attr, def, now) =>
                     bb.DistanceToTarget >= c.p1 && bb.DistanceToTarget <= c.p2,
                 [BehaviorConditions.AbilityReady] = (c, bb, a, attr, def, now) =>
-                    a.IsAbilityReady(c.text1, c.p1),
+                    a.IsAbilityReady(c.text1),
                 [BehaviorConditions.SlotReady] = (c, bb, a, attr, def, now) =>
-                    a.IsSlotReady(c.text1, c.p1),
+                    a.IsSlotReady(c.text1),
                 [BehaviorConditions.SlotUnused] = (c, bb, a, attr, def, now) =>
                     a.IsSlotUnused(c.text1),
                 [BehaviorConditions.AttackCooldownReady] = (c, bb, a, attr, def, now) =>

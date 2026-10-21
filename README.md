@@ -46,6 +46,10 @@ Data\Excel2Json.cmd
 
 > `Data/json-excel/` 已入库,无需额外安装;只运行 `EPPlus.dll` + `json-excel.exe` + `Newtonsoft.Json.dll`(`EPPlus.xml` / `Newtonsoft.Json.xml` 文档不入库)。
 
+`Data/Data/_Excel2Json.state.json` 保存最近一次 Excel 导入后的 JSON 哈希。
+如果工作台修改过 JSON，`Excel2Json.cmd` 会阻止 Excel 静默覆盖，并提示先处理
+这两份数据的冲突。
+
 ---
 
 ## 数据流

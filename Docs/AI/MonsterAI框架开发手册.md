@@ -131,6 +131,9 @@ Monster AI 使用五张独立 Excel 外联表，作者只修改 Excel，不直�
 -> EnemyBrain 按 TID 组装 MonsterAIDefinition
 ```
 
+`Excel2Json` 会记录最近一次生成的 JSON 哈希。若工作台保存过 JSON，
+再次转换会中止并提示，避免 Excel 静默覆盖工作台修改。
+
 现有表已经包含 TID 2001 Shell 和 TID 2002 Werewolf。所有表沿用现有三行表头：
 
 - 第 1 行：中文显示名。
@@ -289,16 +292,20 @@ Pounce 使用原地 `attack` 执行器，不产生位移。Melee 使用 1 秒全
 | `recently_hit` | 无 |
 | `hp_below` | `p1` 为 0 到 1 的血量比例 |
 | `in_range` | `p1` 最小距离，`p2` 最大距离 |
-| `ability_ready` | `text1` 能力 ID，`p1` 冷却 |
-| `slot_ready` | `text1` 槽 ID，`p1` 冷却 |
+| `ability_ready` | `text1` 能力 ID；冷却读取 Ability.Cooldown |
+| `slot_ready` | `text1` 槽 ID；冷却和距离读取 Ability |
 | `slot_unused` | `text1` 槽 ID |
 | `attack_cooldown_ready` | `p1` 冷却 |
+
+技能的距离、冷却和一次性使用限制以 `MonsterAbility` 为准。普通技能规则
+不需要重复填写 `in_range`、`ability_ready`、`slot_ready` 或 `slot_unused`。
+这些条件保留用于兼容旧配置或表达额外策略限制。
 
 动作支持：
 
 | `action` | 字段 |
 |---|---|
-| `ability` | `abilityId` 或 `slot` |
+| `ability` | 优先 `abilityId`，不可用时回退 `slot` |
 | `chase` | 无 |
 | `idle` | 无 |
 
@@ -332,7 +339,7 @@ Pounce 使用原地 `attack` 执行器，不产生位移。Melee 使用 1 秒全
 | `Data/Tables/MonsterAI.xlsx` | 怪物主体 Excel，包含 TID 2001、2002 |
 | `Data/Tables/MonsterAbility.xlsx` | 能力外联表，包含 Shell 6 项、Werewolf 9 项 |
 | `Data/Tables/MonsterBehavior.xlsx` | 行为规则外联表，包含 Shell 6 条、Werewolf 9 条 |
-| `Data/Tables/MonsterBehaviorCondition.xlsx` | 行为条件外联表，包含 Shell 12 条、Werewolf 21 条 |
+| `Data/Tables/MonsterBehaviorCondition.xlsx` | 行为条件外联表，包含 Shell 7 条、Werewolf 9 条 |
 | `Data/Tables/MonsterAnimation.xlsx` | 动画绑定外联表，包含 Shell 5 条、Werewolf 8 条 |
 | `Data/Data/MonsterAI.txt` | 已由 Excel2Json 生成 |
 | `Data/Data/MonsterAbility.txt` | 已由 Excel2Json 生成 |

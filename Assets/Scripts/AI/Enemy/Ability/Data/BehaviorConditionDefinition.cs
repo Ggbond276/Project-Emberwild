@@ -14,7 +14,9 @@ namespace Emberwild.AI.Enemy.Ability
         #endregion
 
         #region 构造方法 (Constructors)
-        /// <summary>创建空行为条件。</summary>
+        /// <summary>
+        /// 创建空行为条件。
+        /// </summary>
         public BehaviorConditionDefinition() { }
 
         /// <summary>创建使用数值参数的行为条件。</summary>
@@ -25,7 +27,9 @@ namespace Emberwild.AI.Enemy.Ability
             this.p2 = p2;
         }
 
-        /// <summary>创建使用字符串参数的行为条件。</summary>
+        /// <summary>
+        /// 创建使用字符串参数的行为条件。
+        /// </summary>
         public BehaviorConditionDefinition(string id, string text1)
         {
             this.id = id;

@@ -145,7 +145,8 @@ namespace Emberwild.Editor.MonsterAI
             }
 
             EditorGUILayout.HelpBox(
-                "此工具写回的是 Data/Data 的 JSON 产物。再次运行 Excel2Json 会覆盖这里保存的修改。",
+                "此工具修改 Data/Data。再次运行 Excel2Json 时，"
+                + "若检测到工作台保存后的 JSON 改动，将阻止覆盖。",
                 MessageType.Warning);
             GUILayout.EndVertical();
         }

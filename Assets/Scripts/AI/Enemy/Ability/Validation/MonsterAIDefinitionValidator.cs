@@ -64,6 +64,18 @@ namespace Emberwild.AI.Enemy.Ability
                         + "maxRange below minRange.";
                     return false;
                 }
+                if (ability.minRange < 0f)
+                {
+                    error = $"TID {definition.TID}: ability '{ability.id}' has "
+                        + "a negative minRange.";
+                    return false;
+                }
+                if (IsCloseRangeSlot(ability.slot) && ability.maxRange >= 9999f)
+                {
+                    error = $"TID {definition.TID}: ability '{ability.id}' uses "
+                        + "a close-range slot but has no finite MaxRange.";
+                    return false;
+                }
                 if (ability.duration < 0f || ability.cooldown < 0f || ability.speed < 0f)
                 {
                     error = $"TID {definition.TID}: ability '{ability.id}' has "
@@ -187,6 +199,16 @@ namespace Emberwild.AI.Enemy.Ability
                 }
             }
             return false;
+        }
+
+        /// <summary>判断槽位是否应配置有限的近身攻击范围。</summary>
+        private static bool IsCloseRangeSlot(string slot)
+        {
+            return slot == AbilitySlotIds.PrimaryAttack
+                || slot == AbilitySlotIds.SecondaryAttack
+                || slot == AbilitySlotIds.HeavyAttack
+                || slot == AbilitySlotIds.GapClose
+                || slot == AbilitySlotIds.Mobility;
         }
         #endregion
     }

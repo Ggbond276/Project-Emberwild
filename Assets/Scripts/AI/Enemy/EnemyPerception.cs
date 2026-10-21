@@ -17,6 +17,7 @@ namespace Emberwild.AI.Enemy
 
         // 2.运行时状态
         private Transform _currentTarget;
+        private CombatAttribute _currentTargetAttribute;
         private float _lastScanTime = -999f;
         #endregion
 
@@ -68,6 +69,7 @@ namespace Emberwild.AI.Enemy
         {
             EnsureTargetLayer();
             _currentTarget = null;
+            _currentTargetAttribute = null;
             _lastScanTime = -999f;
         }
         #endregion
@@ -86,15 +88,24 @@ namespace Emberwild.AI.Enemy
 
             if (_currentTarget != null)
             {
-                float dist = Vector3.Distance(transform.position, CurrentTarget.position);
-                if (dist > _loseTargetRange)
+                bool targetInvalid = _currentTargetAttribute == null
+                    || _currentTargetAttribute.IsDead;
+                float dist = targetInvalid
+                    ? float.MaxValue
+                    : Vector3.Distance(transform.position, CurrentTarget.position);
+                if (targetInvalid || dist > _loseTargetRange)
                 {
                     _currentTarget = null;
+                    _currentTargetAttribute = null;
                 }
                 else
                 {
                     bb.DistanceToTarget = dist;
                 }
+            }
+            else
+            {
+                _currentTargetAttribute = null;
             }
 
             bb.Target = _currentTarget;
@@ -116,6 +127,7 @@ namespace Emberwild.AI.Enemy
             Collider[] hits = Physics.OverlapSphere(transform.position, _sightRange, _targetLayer);
 
             Transform best = null;
+            CombatAttribute bestAttribute = null;
             float bestSqr = float.MaxValue;
 
             for (int i = 0; i < hits.Length; i++)
@@ -130,6 +142,7 @@ namespace Emberwild.AI.Enemy
                 if (sqr >= bestSqr) continue;
 
                 best = col.transform;
+                bestAttribute = attr;
                 bestSqr = sqr;
             }
 
@@ -137,6 +150,7 @@ namespace Emberwild.AI.Enemy
             {
                 bool first = _currentTarget == null;
                 _currentTarget = best;
+                _currentTargetAttribute = bestAttribute;
 
                 if (first)
                     Debug.Log($"[Perception] {name} 锁定目标 {best.name}");

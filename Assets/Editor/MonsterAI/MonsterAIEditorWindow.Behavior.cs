@@ -276,49 +276,20 @@ namespace Emberwild.Editor.MonsterAI
         {
             if (MonsterAIEditorOptions.UsesAbility(condition.ConditionId))
             {
-                Rect abilityRect = new Rect(rect.x, rect.y, rect.width * 0.55f, rect.height);
-                Rect cooldownRect = new Rect(
-                    rect.x + rect.width * 0.57f,
-                    rect.y,
-                    rect.width * 0.43f,
-                    rect.height);
                 condition.Text1 = DrawAbilityPopupRect(
-                    abilityRect,
+                    rect,
                     condition.Text1,
                     profile,
                     false);
-                condition.P1 = EditorGUI.FloatField(
-                    cooldownRect,
-                    new GUIContent("冷却秒数"),
-                    condition.P1);
                 return;
             }
 
             if (MonsterAIEditorOptions.UsesSlot(condition.ConditionId))
             {
-                float cooldownWidth = condition.ConditionId == BehaviorConditions.SlotReady
-                    ? rect.width * 0.32f
-                    : 0f;
-                Rect slotRect = new Rect(
-                    rect.x,
-                    rect.y,
-                    rect.width - cooldownWidth,
-                    rect.height);
                 condition.Text1 = DrawSlotPopupRect(
-                    slotRect,
+                    rect,
                     condition.Text1,
                     profile);
-                if (cooldownWidth > 0f)
-                {
-                    condition.P1 = EditorGUI.FloatField(
-                        new Rect(
-                            rect.x + slotRect.width + 4f,
-                            rect.y,
-                            cooldownWidth - 4f,
-                            rect.height),
-                        new GUIContent("冷却秒数"),
-                        condition.P1);
-                }
                 return;
             }
 

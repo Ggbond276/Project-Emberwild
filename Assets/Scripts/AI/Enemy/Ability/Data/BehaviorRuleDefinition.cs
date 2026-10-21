@@ -10,8 +10,7 @@ namespace Emberwild.AI.Enemy.Ability
         public string action = BehaviorActions.Idle;
         public string abilityId;
         public string slot;
-        public List<BehaviorConditionDefinition> conditions =
-            new List<BehaviorConditionDefinition>();
+        public List<BehaviorConditionDefinition> conditions = new List<BehaviorConditionDefinition>();
         #endregion
     }
 }

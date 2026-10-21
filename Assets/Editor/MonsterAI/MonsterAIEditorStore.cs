@@ -466,9 +466,25 @@ namespace Emberwild.Editor.MonsterAI
                     profile.Animations[i].BindingIndex = i;
                 }
 
-                for (int ruleIndex = 0; ruleIndex < profile.Rules.Count; ruleIndex++)
+                var ruleIndices = profile.Rules
+                    .Select(item => item.Rule.RuleIndex)
+                    .Where(index => index >= 0)
+                    .Distinct()
+                    .OrderBy(index => index)
+                    .ToList();
+                int nextRuleIndex = ruleIndices.Count == 0
+                    ? 0
+                    : ruleIndices[ruleIndices.Count - 1] + 1;
+                while (ruleIndices.Count < profile.Rules.Count)
                 {
-                    var rule = profile.Rules[ruleIndex];
+                    ruleIndices.Add(nextRuleIndex);
+                    nextRuleIndex++;
+                }
+
+                for (int position = 0; position < profile.Rules.Count; position++)
+                {
+                    var rule = profile.Rules[position];
+                    int ruleIndex = ruleIndices[position];
                     rule.Rule.TID = profile.TID;
                     rule.Rule.RuleIndex = ruleIndex;
 

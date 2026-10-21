@@ -10,8 +10,7 @@ namespace Emberwild.AI.Enemy.Ability
     public static class MonsterAIDefinitionRepository
     {
         #region 定义缓存 (Definition Cache)
-        private static readonly Dictionary<int, MonsterAIDefinition> Cache =
-            new Dictionary<int, MonsterAIDefinition>();
+        private static readonly Dictionary<int, MonsterAIDefinition> Cache = new Dictionary<int, MonsterAIDefinition>();
         #endregion
 
         #region 加载状态 (Load Status)
@@ -20,32 +19,58 @@ namespace Emberwild.AI.Enemy.Ability
         #endregion
 
         #region 定义加载与组装 (Definition Loading & Assembly)
-        /// <summary>按 TID 获取并缓存怪物运行时定义。</summary>
+        /// <summary>
+        /// 按 TID 获取并缓存怪物运行时定义。
+        /// </summary>
         public static MonsterAIDefinition Get(int tid)
         {
-            if (Cache.TryGetValue(tid, out var cached)) return cached;
+            TryGet(tid, out var definition, out _);
+            return definition;
+        }
+
+        /// <summary>尝试获取指定 TID 的怪物定义并返回本次调用的错误。</summary>
+        public static bool TryGet(
+            int tid,
+            out MonsterAIDefinition definition,
+            out string error)
+        {
+            definition = null;
+            error = string.Empty;
+            HasLoadError = false;
+            LoadError = string.Empty;
+
+            if (Cache.TryGetValue(tid, out var cached))
+            {
+                definition = cached;
+                return true;
+            }
 
             var manager = DataManager.Instance;
-            if (!manager.MonsterAICores.TryGetValue(tid, out var core)) return null;
+            if (!manager.MonsterAICores.TryGetValue(tid, out var core))
+            {
+                error = $"TID {tid}: MonsterAI entry is missing.";
+                return false;
+            }
 
             try
             {
-                var definition = Build(tid, core, manager);
+                definition = Build(tid, core, manager);
                 Cache[tid] = definition;
-                HasLoadError = false;
-                LoadError = string.Empty;
-                return definition;
+                return true;
             }
             catch (Exception exception)
             {
                 HasLoadError = true;
-                LoadError = $"TID {tid}: failed to assemble monster tables: {exception.Message}";
-                AppLog.Error("EnemyAI", LoadError);
-                return null;
+                error = $"TID {tid}: failed to assemble monster tables: {exception.Message}";
+                LoadError = error;
+                AppLog.Error("EnemyAI", error);
+                return false;
             }
         }
 
-        /// <summary>清空缓存并重新读取全部配置表。</summary>
+        /// <summary>
+        /// 清空缓存并重新读取全部配置表。
+        /// </summary>
         public static void Reload()
         {
             Cache.Clear();
@@ -54,7 +79,9 @@ namespace Emberwild.AI.Enemy.Ability
             DataManager.Instance.Load();
         }
 
-        /// <summary>把五张外联表组装成一只怪物的运行时定义。</summary>
+        /// <summary>
+        /// 把五张外联表组装成一只怪物的运行时定义。
+        /// </summary>
         private static MonsterAIDefinition Build(
             int tid,
             MonsterAICoreDefine core,

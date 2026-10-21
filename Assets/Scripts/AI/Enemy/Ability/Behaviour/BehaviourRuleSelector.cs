@@ -33,6 +33,21 @@ namespace Emberwild.AI.Enemy.Ability
                 {
                     continue;
                 }
+
+                if (rule.action == BehaviorActions.Ability)
+                {
+                    var ability = abilities?.FindExecutableAbility(
+                        rule.abilityId,
+                        rule.slot);
+                    if (ability == null) continue;
+
+                    return new BehaviourDecision(
+                        rule.action,
+                        ability.id,
+                        ability.slot,
+                        ability);
+                }
+
                 return new BehaviourDecision(rule.action, rule.abilityId, rule.slot);
             }
             return Idle();

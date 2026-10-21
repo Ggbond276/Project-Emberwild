@@ -60,6 +60,7 @@ namespace Emberwild.AI.Enemy
         private bool _startupFailed;                                     // 启动是否失败
         private float _staggerEndsAt;                                  // 硬直结束时间戳
         private int _lastTid;                                                  // 当前加载的配置表 TID
+        private bool _abilityStartErrorReported;
         #endregion
 
         #region 公共属性与接口 (Public API / IEnemyAbilityContext)
@@ -157,6 +158,7 @@ namespace Emberwild.AI.Enemy
 
             _startupFailed = false;
             _initialized = false;
+            _abilityStartErrorReported = false;
             enabled = true;
 
             ResolveComponents();
@@ -214,17 +216,20 @@ namespace Emberwild.AI.Enemy
         {
             _startupFailed = false;
             _lastTid = tid;
+            _abilityStartErrorReported = false;
 
-            var definition = tid > 0 ? MonsterAIDefinitionRepository.Get(tid) : null;
-            if (MonsterAIDefinitionRepository.HasLoadError)
+            if (tid <= 0)
             {
-                FailStartup(MonsterAIDefinitionRepository.LoadError);
+                FailStartup($"invalid MonsterAI TID {tid}.");
                 return;
             }
 
-            if (definition == null)
+            if (!MonsterAIDefinitionRepository.TryGet(
+                    tid,
+                    out var definition,
+                    out string loadError))
             {
-                FailStartup($"no MonsterAI external table entry for TID {tid}.");
+                FailStartup(loadError);
                 return;
             }
 
@@ -349,14 +354,14 @@ namespace Emberwild.AI.Enemy
         /// </summary>
         private void Update()
         {
+            // 1.安全性拦截
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
 
+            // 2.perception感知周围，更新BB数据
             _perception.Tick(BB);
-            if (_entity != null && _entity.Attribute != null && _entity.MaxHp > 0f)
-            {
-                BB.HpRatio = _entity.Attribute.CurrentHp / _entity.MaxHp;
-            }
+            RefreshHpRatio();
 
+            // 3.生死判定
             if (IsDead())
             {
                 EnterDead();
@@ -378,6 +383,19 @@ namespace Emberwild.AI.Enemy
             }
 
             EvaluateBehavior();
+        }
+
+        /// <summary>使用运行时战斗属性刷新黑板血量比例。</summary>
+        private void RefreshHpRatio()
+        {
+            var attribute = _entity != null ? _entity.Attribute : null;
+            if (attribute == null || attribute.MaxHp <= 0f)
+            {
+                BB.HpRatio = 1f;
+                return;
+            }
+
+            BB.HpRatio = Mathf.Clamp01(attribute.CurrentHp / attribute.MaxHp);
         }
 
         /// <summary>
@@ -419,9 +437,8 @@ namespace Emberwild.AI.Enemy
                         return;
                     }
 
-                    if (BB.Target != null) EnterChase();
-                    else EnterIdle();
-                    break;
+                    EnterIdle();
+                    return;
 
                 case BehaviorActions.Chase:
                     EnterChase();
@@ -434,18 +451,25 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
-        /// 尝试激活决策指定的能力。
+        /// 启动规则选择器已经解析并确认可执行的能力。
         /// </summary>
         private bool TryActivateDecision(BehaviourDecision decision)
         {
-            if (!string.IsNullOrWhiteSpace(decision.AbilityId)
-                && _abilities.TryActivateAbility(decision.AbilityId))
+            if (decision.Ability != null
+                && _abilities.TryStartResolvedAbility(decision.Ability))
             {
+                _abilityStartErrorReported = false;
                 return true;
             }
 
-            return !string.IsNullOrWhiteSpace(decision.Slot)
-                && _abilities.TryActivateSlot(decision.Slot);
+            if (!_abilityStartErrorReported)
+            {
+                _abilityStartErrorReported = true;
+                AppLog.Error(
+                    "Enemy",
+                    $"{name}: failed to start resolved ability '{decision.AbilityId}'.");
+            }
+            return false;
         }
 
         /// <summary>
@@ -462,7 +486,9 @@ namespace Emberwild.AI.Enemy
 
         #region 状态机切换指令 (State Machine Commands)
 
-        /// <summary>切换到待机并停止移动。</summary>
+        /// <summary>
+        /// 切换到待机并停止移动。
+        /// </summary>
         private void EnterIdle()
         {
             if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
@@ -472,7 +498,9 @@ namespace Emberwild.AI.Enemy
             Animator.SetMoveSpeed(0f);
         }
 
-        /// <summary>切换到追击并持续更新目标位置。</summary>
+        /// <summary>
+        ///
+        /// 切换到追击并持续更新目标位置。</summary>
         private void EnterChase()
         {
             if (_mode == RuntimeMode.Dead || _mode == RuntimeMode.Stagger) return;
@@ -489,7 +517,9 @@ namespace Emberwild.AI.Enemy
             Animator.SetMoveSpeed(NormalizedSpeed);
         }
 
-        /// <summary>中断当前能力并切换到受击硬直。</summary>
+        /// <summary>
+        /// 中断当前能力并切换到受击硬直。
+        /// </summary>
         private void EnterStagger()
         {
             if (_mode == RuntimeMode.Dead) return;
@@ -505,7 +535,9 @@ namespace Emberwild.AI.Enemy
             }
         }
 
-        /// <summary>硬直结束后恢复追击或待机。</summary>
+        /// <summary>
+        /// 硬直结束后恢复追击或待机。
+        /// </summary>
         private void ResumeAfterInterrupt()
         {
             if (IsDead())
@@ -519,7 +551,9 @@ namespace Emberwild.AI.Enemy
             else EnterIdle();
         }
 
-        /// <summary>切换到死亡状态并停止怪物 AI。</summary>
+        /// <summary>
+        /// 切换到死亡状态并停止怪物 AI。
+        /// </summary>
         private void EnterDead()
         {
             if (_mode == RuntimeMode.Dead) return;
@@ -544,14 +578,18 @@ namespace Emberwild.AI.Enemy
 
         #region 外部事件响应 (Event Handlers)
 
-        /// <summary>订阅怪物受击和死亡事件。</summary>
+        /// <summary>
+        /// 订阅怪物受击和死亡事件。
+        /// </summary>
         private void OnEnable()
         {
             EventBus.Subscribe<EnemyDamagedEvent>(OnDamaged);
             EventBus.Subscribe<EnemyDiedEvent>(OnDied);
         }
 
-        /// <summary>取消事件订阅并终止当前能力。</summary>
+        /// <summary>
+        /// 取消事件订阅并终止当前能力。
+        /// </summary>
         private void OnDisable()
         {
             EventBus.Unsubscribe<EnemyDamagedEvent>(OnDamaged);
@@ -559,18 +597,22 @@ namespace Emberwild.AI.Enemy
             _abilities?.Abort();
         }
 
-        /// <summary>记录受击数据并进入硬直。</summary>
+        /// <summary>
+        /// 记录受击数据并进入硬直。
+        /// </summary>
         private void OnDamaged(EnemyDamagedEvent evt)
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
             if (evt.Victim != (ICombatEntity)_entity) return;
 
-            BB.HpRatio = _entity.MaxHp > 0f ? evt.CurrentHp / _entity.MaxHp : 0f;
+            RefreshHpRatio();
             BB.LastHitTime = Time.time;
             EnterStagger();
         }
 
-        /// <summary>收到死亡事件后立即进入死亡状态。</summary>
+        /// <summary>
+        /// 收到死亡事件后立即进入死亡状态。
+        /// </summary>
         private void OnDied(EnemyDiedEvent evt)
         {
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;

@@ -149,6 +149,15 @@ namespace Emberwild.Editor.MonsterAI
                         tid,
                         $"技能 {ability.AbilityId} 的最大距离小于最小距离。");
                 }
+                else if (IsCloseRangeSlot(ability.Slot)
+                         && ability.MaxRange > profile.AI.viewRange)
+                {
+                    AddWarning(
+                        issues,
+                        tid,
+                        $"技能 {ability.AbilityId} 使用近身槽位，"
+                        + $"但 MaxRange={ability.MaxRange:0.##} 超过视野范围。");
+                }
                 if (ability.Duration < 0f || ability.Cooldown < 0f
                     || ability.HitDelay < 0f || ability.Speed < 0f)
                 {
@@ -296,6 +305,7 @@ namespace Emberwild.Editor.MonsterAI
                         rule.Conditions[conditionIndex],
                         ruleIndex,
                         conditionIndex,
+                        rule.Rule.Action == BehaviorActions.Ability,
                         abilityIds,
                         slots,
                         issues);
@@ -308,6 +318,7 @@ namespace Emberwild.Editor.MonsterAI
             MonsterBehaviorConditionRow condition,
             int ruleIndex,
             int conditionIndex,
+            bool isAbilityAction,
             HashSet<string> abilityIds,
             HashSet<string> slots,
             List<MonsterAIEditorIssue> issues)
@@ -343,12 +354,30 @@ namespace Emberwild.Editor.MonsterAI
             {
                 AddError(issues, tid, $"{location} 的最大距离小于最小距离。");
             }
-            if ((condition.ConditionId == BehaviorConditions.AbilityReady
-                 || condition.ConditionId == BehaviorConditions.SlotReady
-                 || condition.ConditionId == BehaviorConditions.AttackCooldownReady)
+            if (condition.ConditionId == BehaviorConditions.AttackCooldownReady
                 && condition.P1 < 0f)
             {
                 AddError(issues, tid, $"{location} 的冷却时间不能为负数。");
+            }
+
+            if (isAbilityAction
+                && (condition.ConditionId == BehaviorConditions.AbilityReady
+                    || condition.ConditionId == BehaviorConditions.SlotReady
+                    || condition.ConditionId == BehaviorConditions.SlotUnused))
+            {
+                AddError(
+                    issues,
+                    tid,
+                    $"{location} 使用了已废弃的能力可用性条件；"
+                    + "冷却、范围和一次性使用必须只在能力表中维护。");
+            }
+            else if (isAbilityAction && condition.ConditionId == BehaviorConditions.InRange)
+            {
+                AddWarning(
+                    issues,
+                    tid,
+                    $"{location} 使用额外距离策略条件；"
+                    + "确认它是在进一步收窄能力范围，而不是重复填写技能范围。");
             }
         }
         #endregion
@@ -390,6 +419,16 @@ namespace Emberwild.Editor.MonsterAI
                 animation.SemanticKey,
                 semanticKey,
                 StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>判断槽位是否属于近身或位移能力。</summary>
+        private static bool IsCloseRangeSlot(string slot)
+        {
+            return slot == AbilitySlotIds.PrimaryAttack
+                || slot == AbilitySlotIds.SecondaryAttack
+                || slot == AbilitySlotIds.HeavyAttack
+                || slot == AbilitySlotIds.GapClose
+                || slot == AbilitySlotIds.Mobility;
         }
 
         private static void AddError(

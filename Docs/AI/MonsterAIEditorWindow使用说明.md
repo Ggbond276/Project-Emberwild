@@ -11,8 +11,9 @@ Emberwild > 怪物 AI > 怪物配置工作台
 窗口会读取项目根目录下的 `Data/Data` 七张配置表。
 
 > 本工具直接修改 `Data/Data` 中的 JSON 产物，不会回写
-> `Data/Tables/*.xlsx`。如果继续运行 `Excel2Json`，Excel 旧内容会覆盖
-> 工作台中保存的修改。
+> `Data/Tables/*.xlsx`。工作台保存后，`Excel2Json` 会通过
+> `Data/Data/_Excel2Json.state.json` 检测 JSON 是否被修改并阻止覆盖。
+> 如确定要用 Excel 覆盖 JSON，需要先删除该状态文件。
 
 ## 基本流程
 
@@ -39,7 +40,8 @@ Emberwild > 怪物 AI > 怪物配置工作台
 - 每条规则的条件必须全部满足。
 - 空条件列表表示该规则始终成立。
 - 条件类型使用下拉选择，只显示该条件真正需要的参数。
-- 保存时会自动重排 `RuleIndex` 和 `ConditionIndex`。
+- 保存时会保留已有 `RuleIndex` 的空号，不为新规则压缩历史编号。
+- 条件会按当前规则重新对齐 `RuleIndex` 和 `ConditionIndex`。
 
 常用条件参数：
 
@@ -47,11 +49,14 @@ Emberwild > 怪物 AI > 怪物配置工作台
 |---|---|
 | 有目标 | 无 |
 | 血量低于 | 0 到 1 的血量比例 |
-| 距离在区间内 | 最小距离、最大距离 |
-| 技能冷却完成 | 技能、冷却秒数 |
-| 技能槽可用 | 技能槽、冷却秒数 |
+| 距离在区间内（策略） | 最小距离、最大距离 |
+| 技能冷却完成（兼容） | 技能 |
+| 技能槽可用（兼容） | 技能槽 |
 | 技能槽未使用 | 技能槽 |
 | 攻击冷却完成 | 冷却秒数 |
+
+技能距离、冷却和一次性使用限制以“技能与打击盒”中的能力配置为准。
+普通技能规则不需要重复填写这些能力可用性条件。
 
 ## 技能与打击盒
 
@@ -87,5 +92,9 @@ Emberwild > 怪物 AI > 怪物配置工作台
 3. 写回七张 `.txt` 文件。
 4. 调用 `AssetDatabase.Refresh()`。
 5. 尝试刷新 `MonsterAIDefinitionRepository` 缓存。
+
+工作台保存后再执行 `Excel2Json` 时，转换器会检测 JSON 哈希变化并阻止
+Excel 覆盖。若要明确放弃工作台修改并使用 Excel，先删除
+`Data/Data/_Excel2Json.state.json`。
 
 Play Mode 中保存会更新数据缓存，但场上已经生成的怪物仍保留旧运行时状态。需要重新出生或重新进入 Play Mode 才能完全应用。

@@ -17,10 +17,10 @@ namespace Emberwild.Editor.MonsterAI
         {
             new MonsterAIEditorOption(BehaviorConditions.HasTarget, "有目标"),
             new MonsterAIEditorOption(BehaviorConditions.HpBelow, "血量低于"),
-            new MonsterAIEditorOption(BehaviorConditions.InRange, "距离在区间内"),
-            new MonsterAIEditorOption(BehaviorConditions.AbilityReady, "技能冷却完成"),
-            new MonsterAIEditorOption(BehaviorConditions.SlotReady, "技能槽可用"),
-            new MonsterAIEditorOption(BehaviorConditions.SlotUnused, "技能槽未使用"),
+            new MonsterAIEditorOption(BehaviorConditions.InRange, "距离在区间内（策略）"),
+            new MonsterAIEditorOption(BehaviorConditions.AbilityReady, "技能冷却完成（兼容）"),
+            new MonsterAIEditorOption(BehaviorConditions.SlotReady, "技能槽可用（兼容）"),
+            new MonsterAIEditorOption(BehaviorConditions.SlotUnused, "技能槽未使用（兼容）"),
             new MonsterAIEditorOption(BehaviorConditions.AttackCooldownReady, "攻击冷却完成"),
             new MonsterAIEditorOption(BehaviorConditions.RecentlyHit, "受击硬直中"),
             new MonsterAIEditorOption(BehaviorConditions.IsDead, "已经死亡"),
@@ -42,6 +42,7 @@ namespace Emberwild.Editor.MonsterAI
         {
             new MonsterAIEditorOption(string.Empty, "无"),
             new MonsterAIEditorOption(AbilitySlotIds.PrimaryAttack, "主攻击"),
+            new MonsterAIEditorOption(AbilitySlotIds.SecondaryAttack, "副攻击"),
             new MonsterAIEditorOption(AbilitySlotIds.HeavyAttack, "重攻击"),
             new MonsterAIEditorOption(AbilitySlotIds.GapClose, "拉近距离"),
             new MonsterAIEditorOption(AbilitySlotIds.RangedAttack, "远程攻击"),
@@ -103,8 +104,6 @@ namespace Emberwild.Editor.MonsterAI
         {
             return conditionId == BehaviorConditions.HpBelow
                 || conditionId == BehaviorConditions.InRange
-                || conditionId == BehaviorConditions.AbilityReady
-                || conditionId == BehaviorConditions.SlotReady
                 || conditionId == BehaviorConditions.AttackCooldownReady;
         }
 
