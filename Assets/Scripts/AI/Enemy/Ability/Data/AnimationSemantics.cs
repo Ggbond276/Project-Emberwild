@@ -1,10 +1,8 @@
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 动画语义键。AI 和配置只使用这些稳定键，不直接依赖具体 Animator 参数名称。
-    /// </summary>
     public static class AnimationSemantics
     {
+        #region 动画语义常量 (Animation Semantics)
         public const string MoveSpeed = "move.speed";
 
         public const string Melee = "action.melee";
@@ -18,5 +16,6 @@ namespace Emberwild.AI.Enemy.Ability
 
         public const string Roll = "state.roll";
         public const string Guard = "state.guard";
+        #endregion
     }
 }

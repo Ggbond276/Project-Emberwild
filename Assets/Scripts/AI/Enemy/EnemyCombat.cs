@@ -4,27 +4,24 @@ using UnityEngine;
 
 namespace Emberwild.AI.Enemy
 {
-    /// <summary>
-    /// 怪物攻击事件发布层。命中时机由能力执行器决定，本组件只负责把攻击段发送给战斗系统。
-    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(EnemyEntity))]
     public class EnemyCombat : MonoBehaviour
     {
+        #region 本地核心组件 (Local Components)
         private EnemyEntity _entity;
+        #endregion
 
-        /// <summary>在组件启动时自动解析本地怪物实体。</summary>
+        #region Unity 生命周期与装配 (Lifecycle & Setup)
+        /// <summary>获取怪物身上的 EnemyEntity。</summary>
         private void Awake()
         {
             _entity = GetComponent<EnemyEntity>();
         }
+        #endregion
 
-        /// <summary>
-        /// 发布一次已经计算好时机的攻击事件。
-        /// </summary>
-        /// <param name="comboIndex">AttackDefine 中的攻击段号，小于 0 表示该能力不产生伤害。</param>
-        /// <param name="ranged">是否为远程攻击。</param>
-        /// <param name="targetPosition">远程攻击冻结的目标位置。</param>
+        #region 攻击事件发布 (Attack Publishing)
+        /// <summary>发布一次怪物攻击命中事件。</summary>
         public void PublishAttack(int comboIndex, bool ranged, Vector3 targetPosition)
         {
             if (comboIndex < 0)
@@ -39,5 +36,6 @@ namespace Emberwild.AI.Enemy
                 ranged ? targetPosition : default));
             AppLog.Info("Combat", $"{name}: hit event combo={comboIndex} ranged={ranged}");
         }
+        #endregion
     }
 }

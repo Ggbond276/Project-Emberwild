@@ -3,11 +3,9 @@ using System.Collections.Generic;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 执行器注册表。普通能力使用内置执行器，特殊 Boss 机制可以注册独立实现。
-    /// </summary>
     public static class AbilityExecutorRegistry
     {
+        #region 执行器注册表 (Executor Registry)
         private static readonly Dictionary<string, Func<IAbilityExecutor>> Factories =
             new Dictionary<string, Func<IAbilityExecutor>>(StringComparer.OrdinalIgnoreCase)
             {
@@ -19,21 +17,23 @@ namespace Emberwild.AI.Enemy.Ability
                 [AbilityExecutorIds.PlayAndWait] = () => new PlayAndWaitAbilityExecutor(),
                 [AbilityExecutorIds.Dead] = () => new DeadAbilityExecutor()
             };
+        #endregion
 
-        /// <summary>注册或替换一个执行器工厂。</summary>
+        #region 执行器注册与创建 (Executor Registration)
+        /// <summary>注册或替换执行器工厂。</summary>
         public static void Register(string executorId, Func<IAbilityExecutor> factory)
         {
             if (string.IsNullOrWhiteSpace(executorId) || factory == null) return;
             Factories[executorId] = factory;
         }
 
-        /// <summary>判断指定执行器 ID 是否已注册。</summary>
+        /// <summary>判断执行器 ID 是否已经注册。</summary>
         public static bool Contains(string executorId)
         {
             return !string.IsNullOrWhiteSpace(executorId) && Factories.ContainsKey(executorId);
         }
 
-        /// <summary>创建一个新的执行器实例；未知 ID 返回 null。</summary>
+        /// <summary>按 ID 创建执行器实例。</summary>
         public static IAbilityExecutor Create(string executorId)
         {
             return !string.IsNullOrWhiteSpace(executorId)
@@ -41,5 +41,6 @@ namespace Emberwild.AI.Enemy.Ability
                 ? factory()
                 : null;
         }
+        #endregion
     }
 }

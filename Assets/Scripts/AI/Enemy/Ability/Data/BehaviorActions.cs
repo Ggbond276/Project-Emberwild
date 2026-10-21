@@ -1,12 +1,11 @@
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 行为规则可执行的动作类型。
-    /// </summary>
     public static class BehaviorActions
     {
+        #region 行为动作常量 (Behavior Actions)
         public const string Ability = "ability";
         public const string Chase = "chase";
         public const string Idle = "idle";
+        #endregion
     }
 }

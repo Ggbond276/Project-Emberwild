@@ -4,14 +4,10 @@ using Emberwild.Manager;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 校验怪物定义中的能力、行为、动画映射和必要反应槽。
-    /// </summary>
     public static class MonsterAIDefinitionValidator
     {
-        /// <summary>
-        /// 校验怪物定义的结构完整性。
-        /// </summary>
+        #region 怪物定义校验 (Monster Definition Validation)
+        /// <summary>校验怪物定义的结构、引用和动画绑定。</summary>
         public static bool Validate(MonsterAIDefinition definition, out string error)
         {
             error = string.Empty;
@@ -34,7 +30,8 @@ namespace Emberwild.AI.Enemy.Ability
                 || string.IsNullOrWhiteSpace(definition.animation.speedParameter)
                 || string.IsNullOrWhiteSpace(definition.animation.deadParameter))
             {
-                error = $"TID {definition.TID}: animation profile must define speedParameter and deadParameter.";
+                error = $"TID {definition.TID}: animation profile must define "
+                    + "speedParameter and deadParameter.";
                 return false;
             }
 
@@ -57,28 +54,34 @@ namespace Emberwild.AI.Enemy.Ability
                 if (ability.executor == AbilityExecutorIds.Dead) hasDeathExecutor = true;
                 if (!AbilityExecutorRegistry.Contains(ability.executor))
                 {
-                    error = $"TID {definition.TID}: ability '{ability.id}' uses unknown executor '{ability.executor}'.";
+                    error = $"TID {definition.TID}: ability '{ability.id}' uses "
+                        + $"unknown executor '{ability.executor}'.";
                     return false;
                 }
                 if (ability.maxRange < ability.minRange)
                 {
-                    error = $"TID {definition.TID}: ability '{ability.id}' has maxRange below minRange.";
+                    error = $"TID {definition.TID}: ability '{ability.id}' has "
+                        + "maxRange below minRange.";
                     return false;
                 }
                 if (ability.duration < 0f || ability.cooldown < 0f || ability.speed < 0f)
                 {
-                    error = $"TID {definition.TID}: ability '{ability.id}' has a negative timing or speed.";
+                    error = $"TID {definition.TID}: ability '{ability.id}' has "
+                        + "a negative timing or speed.";
                     return false;
                 }
             }
+
             if (!slots.Contains(AbilitySlotIds.HitReaction))
             {
-                error = $"TID {definition.TID}: missing '{AbilitySlotIds.HitReaction}' ability.";
+                error = $"TID {definition.TID}: missing "
+                    + $"'{AbilitySlotIds.HitReaction}' ability.";
                 return false;
             }
             if (!hasDeathExecutor)
             {
-                error = $"TID {definition.TID}: missing an ability using executor '{AbilityExecutorIds.Dead}'.";
+                error = $"TID {definition.TID}: missing an ability using executor "
+                    + $"'{AbilityExecutorIds.Dead}'.";
                 return false;
             }
 
@@ -96,16 +99,19 @@ namespace Emberwild.AI.Enemy.Ability
                     && !abilityIds.Contains(rule.abilityId ?? string.Empty)
                     && !slots.Contains(rule.slot ?? string.Empty))
                 {
-                    error = $"TID {definition.TID}: behavior references missing ability '{rule.abilityId}' or slot '{rule.slot}'.";
+                    error = $"TID {definition.TID}: behavior references missing ability "
+                        + $"'{rule.abilityId}' or slot '{rule.slot}'.";
                     return false;
                 }
                 if (rule.conditions != null)
                 {
                     foreach (var condition in rule.conditions)
                     {
-                        if (condition == null || !BehaviorConditionRegistry.Contains(condition.id))
+                        if (condition == null
+                            || !BehaviorConditionRegistry.Contains(condition.id))
                         {
-                            error = $"TID {definition.TID}: behavior uses unknown condition '{condition?.id}'.";
+                            error = $"TID {definition.TID}: behavior uses "
+                                + $"unknown condition '{condition?.id}'.";
                             return false;
                         }
                     }
@@ -117,23 +123,26 @@ namespace Emberwild.AI.Enemy.Ability
                 if (!string.IsNullOrWhiteSpace(ability.animationAction)
                     && !HasBinding(definition.animation, ability.animationAction))
                 {
-                    error = $"TID {definition.TID}: missing animation binding '{ability.animationAction}' for ability '{ability.id}'.";
+                    error = $"TID {definition.TID}: missing animation binding "
+                        + $"'{ability.animationAction}' for ability '{ability.id}'.";
                     return false;
                 }
                 if (!string.IsNullOrWhiteSpace(ability.animationState)
                     && !HasBinding(definition.animation, ability.animationState))
                 {
-                    error = $"TID {definition.TID}: missing animation state binding '{ability.animationState}' for ability '{ability.id}'.";
+                    error = $"TID {definition.TID}: missing animation state binding "
+                        + $"'{ability.animationState}' for ability '{ability.id}'.";
                     return false;
                 }
             }
             return true;
         }
 
-        /// <summary>
-        /// 校验伤害能力引用的 CharacterDefine 和 AttackDefine 是否真实存在。
-        /// </summary>
-        public static bool ValidateCombatLinks(MonsterAIDefinition definition, int tid, out string error)
+        /// <summary>校验伤害能力引用的角色和攻击配置。</summary>
+        public static bool ValidateCombatLinks(
+            MonsterAIDefinition definition,
+            int tid,
+            out string error)
         {
             error = string.Empty;
             if (definition == null) return true;
@@ -160,15 +169,25 @@ namespace Emberwild.AI.Enemy.Ability
             return true;
         }
 
-        private static bool HasBinding(AnimationProfileDefinition profile, string semantic)
+        /// <summary>判断动画配置中是否存在指定语义绑定。</summary>
+        private static bool HasBinding(
+            AnimationProfileDefinition profile,
+            string semantic)
         {
             if (profile == null || profile.bindings == null) return false;
             foreach (var binding in profile.bindings)
             {
-                if (binding != null && string.Equals(binding.semanticKey, semantic, StringComparison.OrdinalIgnoreCase))
+                if (binding != null
+                    && string.Equals(
+                        binding.semanticKey,
+                        semantic,
+                        StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
             }
             return false;
         }
+        #endregion
     }
 }

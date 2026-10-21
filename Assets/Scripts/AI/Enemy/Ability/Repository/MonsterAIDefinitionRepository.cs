@@ -7,23 +7,20 @@ using Emberwild.Manager;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 从 DataManager 已加载的外联表组装单只怪物的运行时定义。
-    /// </summary>
     public static class MonsterAIDefinitionRepository
     {
+        #region 定义缓存 (Definition Cache)
         private static readonly Dictionary<int, MonsterAIDefinition> Cache =
             new Dictionary<int, MonsterAIDefinition>();
+        #endregion
 
-        /// <summary>外联表组装是否发生异常。</summary>
+        #region 加载状态 (Load Status)
         public static bool HasLoadError { get; private set; }
-
-        /// <summary>最近一次外联表组装错误的详细描述。</summary>
         public static string LoadError { get; private set; }
+        #endregion
 
-        /// <summary>
-        /// 按 TID 获取怪物定义；TID 不在 MonsterAI 表中时返回 null。
-        /// </summary>
+        #region 定义加载与组装 (Definition Loading & Assembly)
+        /// <summary>按 TID 获取并缓存怪物运行时定义。</summary>
         public static MonsterAIDefinition Get(int tid)
         {
             if (Cache.TryGetValue(tid, out var cached)) return cached;
@@ -48,7 +45,7 @@ namespace Emberwild.AI.Enemy.Ability
             }
         }
 
-        /// <summary>清空组装缓存并重新读取所有数据表。</summary>
+        /// <summary>清空缓存并重新读取全部配置表。</summary>
         public static void Reload()
         {
             Cache.Clear();
@@ -57,6 +54,7 @@ namespace Emberwild.AI.Enemy.Ability
             DataManager.Instance.Load();
         }
 
+        /// <summary>把五张外联表组装成一只怪物的运行时定义。</summary>
         private static MonsterAIDefinition Build(
             int tid,
             MonsterAICoreDefine core,
@@ -87,7 +85,8 @@ namespace Emberwild.AI.Enemy.Ability
                     if (!Enum.TryParse(row.BindingType, true, out AnimationBindingType bindingType))
                     {
                         throw new InvalidOperationException(
-                            $"Unknown animation binding type '{row.BindingType}' for '{row.SemanticKey}'.");
+                            $"Unknown animation binding type '{row.BindingType}' "
+                            + $"for '{row.SemanticKey}'.");
                     }
 
                     definition.animation.bindings.Add(new AnimationBinding
@@ -133,7 +132,8 @@ namespace Emberwild.AI.Enemy.Ability
             {
                 conditionsByRule = conditions
                     .GroupBy(item => item.RuleIndex)
-                    .ToDictionary(group => group.Key,
+                    .ToDictionary(
+                        group => group.Key,
                         group => group.OrderBy(item => item.ConditionIndex).ToList());
             }
 
@@ -152,13 +152,14 @@ namespace Emberwild.AI.Enemy.Ability
                     {
                         foreach (var condition in ruleConditions)
                         {
-                            rule.conditions.Add(new BehaviorConditionDefinition(condition.ConditionId)
-                            {
-                                text1 = condition.Text1,
-                                text2 = condition.Text2,
-                                p1 = condition.P1,
-                                p2 = condition.P2
-                            });
+                            rule.conditions.Add(
+                                new BehaviorConditionDefinition(condition.ConditionId)
+                                {
+                                    text1 = condition.Text1,
+                                    text2 = condition.Text2,
+                                    p1 = condition.P1,
+                                    p2 = condition.P2
+                                });
                         }
                     }
                     definition.behavior.Add(rule);
@@ -167,5 +168,6 @@ namespace Emberwild.AI.Enemy.Ability
 
             return definition;
         }
+        #endregion
     }
 }

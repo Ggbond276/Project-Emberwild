@@ -1,27 +1,40 @@
-﻿using Emberwild.Combat;
+using Emberwild.Combat;
 using UnityEngine;
 
 namespace Emberwild.AI.Enemy
 {
-    /// <summary>
-    /// 感知：定时扫描玩家并写入黑板。
-    /// </summary>
     public class EnemyPerception : MonoBehaviour
     {
+        #region 感知配置与状态 (Perception Configuration & State)
+        // 目标层、感知范围与扫描计时
         [Tooltip("要搜索的目标层，留空自动使用 Player 层")]
         [SerializeField] private LayerMask _targetLayer;
 
+        // 1.静态数据
         private float _sightRange = 10f;
         private float _loseTargetRange = 13f;
         private float _scanInterval = 0.2f;
 
+        // 2.运行时状态
         private Transform _currentTarget;
         private float _lastScanTime = -999f;
+        #endregion
 
+        #region 感知查询 (Perception Queries)
         public Transform CurrentTarget => _currentTarget;
+        #endregion
+
+        #region 感知初始化与配置 (Perception Setup & Configuration)
+        /// <summary>
+        /// 初始化感知组件使用的目标层。
+        /// </summary>
+        private void Awake()
+        {
+            EnsureTargetLayer();
+        }
 
         /// <summary>
-        /// 未配置目标层时自动取 Player，避免 OverlapSphere 扫 0 层永远返回空。
+        /// 在未配置目标层时自动使用 Player 层。
         /// </summary>
         private void EnsureTargetLayer()
         {
@@ -39,32 +52,46 @@ namespace Emberwild.AI.Enemy
         }
 
         /// <summary>
-        /// 初始化感知组件需要的目标层。
+        /// 注入感知距离和扫描间隔。
         /// </summary>
-        private void Awake()
+        public void Configure(float sightRange, float loseTargetRange, float scanInterval)
         {
-            EnsureTargetLayer();
+            _sightRange = sightRange;
+            _loseTargetRange = loseTargetRange;
+            _scanInterval = scanInterval;
         }
 
         /// <summary>
-        /// 按扫描间隔更新目标，并把感知结果写入怪物黑板。
+        /// 清空目标锁定时和扫描时间。
         /// </summary>
-        /// <param name="bb">当前怪物共享的黑板数据。</param>
+        public void ResetForSpawn()
+        {
+            EnsureTargetLayer();
+            _currentTarget = null;
+            _lastScanTime = -999f;
+        }
+        #endregion
+
+        #region 感知更新与扫描 (Perception Update & Scanning)
+        /// <summary>
+        /// 按扫描间隔寻找目标并把感知结果写入黑板。
+        /// </summary>
         public void Tick(EnemyBlackboard bb)
         {
-            if(Time.time - _lastScanTime >=  _scanInterval)
+            if (Time.time - _lastScanTime >= _scanInterval)
             {
                 _lastScanTime = Time.time;
                 Scan();
             }
 
-            if(_currentTarget != null)
+            if (_currentTarget != null)
             {
                 float dist = Vector3.Distance(transform.position, CurrentTarget.position);
-                if(dist > _loseTargetRange)
+                if (dist > _loseTargetRange)
                 {
                     _currentTarget = null;
-                } else
+                }
+                else
                 {
                     bb.DistanceToTarget = dist;
                 }
@@ -72,14 +99,14 @@ namespace Emberwild.AI.Enemy
 
             bb.Target = _currentTarget;
             bb.CanSeeTarget = _currentTarget != null;
-            if(_currentTarget == null)
+            if (_currentTarget == null)
             {
                 bb.DistanceToTarget = float.MaxValue;
             }
         }
 
         /// <summary>
-        /// 球形扫描，取最近的有效战斗实体。
+        /// 扫描视野并锁定最近的有效战斗目标。
         /// </summary>
         private void Scan()
         {
@@ -96,7 +123,6 @@ namespace Emberwild.AI.Enemy
                 Collider col = hits[i];
                 if (col == null) continue;
 
-                // 只认带 CombatAttribute 的，避免选中装饰物
                 CombatAttribute attr = col.GetComponentInParent<CombatAttribute>();
                 if (attr == null || attr.IsDead) continue;
 
@@ -116,32 +142,11 @@ namespace Emberwild.AI.Enemy
                     Debug.Log($"[Perception] {name} 锁定目标 {best.name}");
             }
         }
+        #endregion
 
+        #region 编辑器可视化 (Gizmos)
         /// <summary>
-        /// 从怪物外联表注入感知距离和扫描频率。
-        /// </summary>
-        /// <param name="sightRange">首次发现目标时使用的视野半径。</param>
-        /// <param name="loseTargetRange">已经锁定目标后允许保持锁定的距离。</param>
-        /// <param name="scanInterval">两次主动扫描之间等待的秒数。</param>
-        public void Configure(float sightRange, float loseTargetRange, float scanInterval)
-        {
-            _sightRange = sightRange;
-            _loseTargetRange = loseTargetRange;
-            _scanInterval = scanInterval;
-        }
-
-        /// <summary>
-        /// 清除上一条生命周期的目标和扫描时间，确保池对象从空感知状态开始。
-        /// </summary>
-        public void ResetForSpawn()
-        {
-            EnsureTargetLayer();
-            _currentTarget = null;
-            _lastScanTime = -999f;
-        }
-
-        /// <summary>
-        /// 编辑器可视化：黄圈表示视野，蓝圈表示丢失目标距离。
+        /// 在 Scene 视图中绘制视野和丢失目标范围。
         /// </summary>
         private void OnDrawGizmosSelected()
         {
@@ -151,5 +156,6 @@ namespace Emberwild.AI.Enemy
             Gizmos.color = Color.blue;
             Gizmos.DrawWireSphere(transform.position, _loseTargetRange);
         }
+        #endregion
     }
 }

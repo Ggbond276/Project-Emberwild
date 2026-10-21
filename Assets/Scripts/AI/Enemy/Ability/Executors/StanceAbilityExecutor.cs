@@ -2,15 +2,27 @@ using UnityEngine;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 持续姿态执行器。用于缩壳等能力，统一处理移动锁和承伤倍率。
-    /// </summary>
     public class StanceAbilityExecutor : IAbilityExecutor
     {
+        #region 执行器运行时状态 (Executor Runtime State)
         private float _endsAt;
         private float _previousDamageMultiplier = 1f;
+        #endregion
 
-        /// <summary>锁定移动、开启姿态动画并设置承伤倍率。</summary>
+        #region 能力进度 (Ability Progress)
+        /// <summary>姿态时间结束后返回完成。</summary>
+        public bool Tick(
+            AbilityDefinition definition,
+            IEnemyAbilityContext context,
+            float deltaTime,
+            float elapsed)
+        {
+            return Time.time >= _endsAt;
+        }
+        #endregion
+
+        #region 能力开始与结束 (Ability Start & End)
+        /// <summary>锁定移动、播放姿态并修改承伤倍率。</summary>
         public void Start(AbilityDefinition definition, IEnemyAbilityContext context)
         {
             context.Agent.SetMotionLocked(true);
@@ -25,17 +37,7 @@ namespace Emberwild.AI.Enemy.Ability
             }
         }
 
-        /// <summary>姿态时间结束后返回完成。</summary>
-        public bool Tick(
-            AbilityDefinition definition,
-            IEnemyAbilityContext context,
-            float deltaTime,
-            float elapsed)
-        {
-            return Time.time >= _endsAt;
-        }
-
-        /// <summary>关闭姿态并恢复进入前的承伤倍率。</summary>
+        /// <summary>关闭姿态并恢复原承伤倍率。</summary>
         public void Stop(AbilityDefinition definition, IEnemyAbilityContext context)
         {
             context.Agent.SetMotionLocked(false);
@@ -43,5 +45,6 @@ namespace Emberwild.AI.Enemy.Ability
             if (context.Attribute != null)
                 context.Attribute.DamageTakenMultiplier = _previousDamageMultiplier;
         }
+        #endregion
     }
 }

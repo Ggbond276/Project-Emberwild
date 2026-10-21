@@ -2,17 +2,18 @@ using System;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 一次可执行能力的完整数据。执行器根据字段决定移动、命中、动画和冷却。
-    /// </summary>
     [Serializable]
     public class AbilityDefinition
     {
+        #region 能力配置数据 (Ability Data)
+        // 能力身份与执行配置
         public string id;
         public string slot;
         public string executor = AbilityExecutorIds.Attack;
         public string animationAction;
         public string animationState;
+
+        // 时间、伤害与距离配置
         public float duration = 0.6f;
         public float cooldown;
         public int damageComboIndex = -1;
@@ -27,5 +28,6 @@ namespace Emberwild.AI.Enemy.Ability
         public bool oncePerCombat;
         public float damageTakenMultiplier = 1f;
         public int priority;
+        #endregion
     }
 }

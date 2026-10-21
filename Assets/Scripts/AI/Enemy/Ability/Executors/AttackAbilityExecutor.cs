@@ -2,23 +2,44 @@ using UnityEngine;
 
 namespace Emberwild.AI.Enemy.Ability
 {
-    /// <summary>
-    /// 原地攻击执行器，支持近战和远程攻击、命中延迟以及移动锁定。
-    /// </summary>
     public class AttackAbilityExecutor : IAbilityExecutor
     {
+        #region 执行器运行时状态 (Executor Runtime State)
         private readonly bool _ranged;
         private bool _hitEmitted;
         private Vector3 _targetPosition;
+        #endregion
 
+        #region 构造方法 (Constructor)
+        /// <summary>创建近战或远程攻击执行器。</summary>
         public AttackAbilityExecutor(bool ranged)
         {
             _ranged = ranged;
         }
+        #endregion
 
-        /// <summary>
-        /// 开始攻击动画、面向目标，并记录本次攻击的目标位置。
-        /// </summary>
+        #region 能力进度 (Ability Progress)
+        /// <summary>到达命中时间后发布攻击事件。</summary>
+        public bool Tick(
+            AbilityDefinition definition,
+            IEnemyAbilityContext context,
+            float deltaTime,
+            float elapsed)
+        {
+            if (!_hitEmitted && elapsed >= definition.hitDelay)
+            {
+                _hitEmitted = true;
+                context.Combat.PublishAttack(
+                    definition.damageComboIndex,
+                    _ranged,
+                    _targetPosition);
+            }
+            return elapsed >= Mathf.Max(0f, definition.duration);
+        }
+        #endregion
+
+        #region 能力开始与结束 (Ability Start & End)
+        /// <summary>播放攻击动画、面向目标并锁定移动。</summary>
         public void Start(AbilityDefinition definition, IEnemyAbilityContext context)
         {
             _hitEmitted = false;
@@ -36,25 +57,11 @@ namespace Emberwild.AI.Enemy.Ability
                 context.Animator.PlaySemanticAction(definition.animationAction);
         }
 
-        /// <summary>到达命中时间时发布攻击事件，持续时间结束后返回完成。</summary>
-        public bool Tick(
-            AbilityDefinition definition,
-            IEnemyAbilityContext context,
-            float deltaTime,
-            float elapsed)
-        {
-            if (!_hitEmitted && elapsed >= definition.hitDelay)
-            {
-                _hitEmitted = true;
-                context.Combat.PublishAttack(definition.damageComboIndex, _ranged, _targetPosition);
-            }
-            return elapsed >= Mathf.Max(0f, definition.duration);
-        }
-
         /// <summary>解除攻击期间的移动锁定。</summary>
         public void Stop(AbilityDefinition definition, IEnemyAbilityContext context)
         {
             if (definition.lockMovement) context.Agent.SetMotionLocked(false);
         }
+        #endregion
     }
 }
