@@ -23,24 +23,36 @@ namespace Emberwild.Combat
         public bool IsDead { get; private set; }
 
         /// <summary>
-        /// 缩壳减伤标志
+        /// Runtime damage multiplier. One means no mitigation.
         /// </summary>
-        public bool IsHidden { get; set; }
+        public float DamageTakenMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// 兼容旧缩壳逻辑的隐藏状态，底层通过伤害倍率表示。
+        /// </summary>
+        public bool IsHidden
+        {
+            get => DamageTakenMultiplier < 1f;
+            set => DamageTakenMultiplier = value ? 0.5f : 1f;
+        }
 
         private ICombatEntity _entity;
 
+        /// <summary>
+        /// 缓存当前 GameObject 上的战斗实体接口。
+        /// </summary>
         private void Awake()
         {
             _entity = GetComponent<ICombatEntity>();
         }
 
         /// <summary>
-        /// 初始化
+        /// 初始化角色的生命值、攻击、防御和伤害倍率。
         /// </summary>
-        /// <param name="maxHp"></param>
-        /// <param name="currentHp"></param>
-        /// <param name="baseAD"></param>
-        /// <param name="baseDEF"></param>
+        /// <param name="maxHp">角色的最大生命值。</param>
+        /// <param name="currentHp">角色的当前生命值。</param>
+        /// <param name="baseAD">角色的基础攻击力。</param>
+        /// <param name="baseDEF">角色的基础防御力。</param>
         public void Initialize(float maxHp, float currentHp, float baseAD, float baseDEF)
         {
             MaxHp = maxHp;
@@ -48,6 +60,7 @@ namespace Emberwild.Combat
             CurrentAD = baseAD;   
             CurrentDEF = baseDEF;
             IsDead = currentHp <= 0;
+            DamageTakenMultiplier = 1f;
         }
 
         /// <summary>
@@ -60,7 +73,7 @@ namespace Emberwild.Combat
         {
             if (IsDead) return;
 
-            if (IsHidden) damageAmount *= 0.5f; // 缩壳减伤0.5f
+            damageAmount *= Mathf.Max(0f, DamageTakenMultiplier);
 
             CurrentHp = Mathf.Max(0, CurrentHp - damageAmount);
             AppLog.Info("Combat", $"{gameObject.name} 受到 {damageAmount:F1} 伤害, 剩余 HP: {CurrentHp:F1}");
@@ -77,7 +90,7 @@ namespace Emberwild.Combat
         }
 
         /// <summary>
-        /// 发布死亡事件
+        /// 根据战斗阵营发布玩家或敌人的死亡事件。
         /// </summary>
         private void PublishDiedEvent()
         {
@@ -89,9 +102,11 @@ namespace Emberwild.Combat
         }
 
         /// <summary>
-        /// 发布受伤事件
+        /// 根据战斗阵营发布玩家或敌人的受伤事件。
         /// </summary>
-        /// <param name="damage"></param>
+        /// <param name="damage">本次实际造成的伤害值。</param>
+        /// <param name="hitPoint">命中发生的世界坐标。</param>
+        /// <param name="fromDirection">伤害来源方向。</param>
         private void PublishDamagedEvent(float damage, Vector3 hitPoint, Vector3 fromDirection)
         {
             if (_entity == null) return;

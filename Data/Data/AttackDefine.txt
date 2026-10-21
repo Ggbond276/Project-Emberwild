@@ -59,7 +59,7 @@
     "Param2": 0.0,
     "Knockback": 1.0
   },
-  "2101": {
+  "3001": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 0,
     "DmgRate": 1.0,
@@ -69,7 +69,7 @@
     "Param2": 2.2,
     "Knockback": 2.0
   },
-  "2102": {
+  "3002": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 1,
     "DmgRate": 1.8,
@@ -77,9 +77,9 @@
     "OffsetZ": 1.5,
     "Param1": 2.4,
     "Param2": 2.6,
-    "Knockback": 4.0
+    "Knockback": 2.0
   },
-  "2103": {
+  "3003": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 2,
     "DmgRate": 1.4,
@@ -87,9 +87,9 @@
     "OffsetZ": 2.0,
     "Param1": 1.8,
     "Param2": 3.2,
-    "Knockback": 3.0
+    "Knockback": 2.0
   },
-  "2104": {
+  "3004": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 3,
     "DmgRate": 1.2,
@@ -97,9 +97,9 @@
     "OffsetZ": 2.2,
     "Param1": 2.0,
     "Param2": 3.6,
-    "Knockback": 3.0
+    "Knockback": 2.0
   },
-  "2105": {
+  "3005": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 4,
     "DmgRate": 0.8,
@@ -107,9 +107,9 @@
     "OffsetZ": 0.0,
     "Param1": 1.5,
     "Param2": 0.0,
-    "Knockback": 1.0
+    "Knockback": 2.0
   },
-  "2106": {
+  "3006": {
     "ComboGroup": "Werewolf",
     "ComboIndex": 5,
     "DmgRate": 0.5,
@@ -117,6 +117,6 @@
     "OffsetZ": 0.0,
     "Param1": 4.0,
     "Param2": 0.0,
-    "Knockback": 0.0
+    "Knockback": 2.0
   }
 }

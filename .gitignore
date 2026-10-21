@@ -132,5 +132,9 @@ InitTestScene*.unity*
 /Data/json-excel/EPPlus.xml
 /Data/json-excel/Newtonsoft.Json.xml
 
-# ===== Excel 源表原始文件(Excel 源在本地维护,产物 JSON 入库即可)=====
-/Data/Tables/*.xlsx
+# ===== 课程/论文资料(本地保留,不入库)=====
+/Docs/论文/
+/Docs/assigment/
+
+# Excel temporary lock files
+~$*.xlsx

@@ -1,0 +1,249 @@
+{
+  "1": {
+    "TID": 2001,
+    "RuleIndex": 0,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "2": {
+    "TID": 2001,
+    "RuleIndex": 0,
+    "ConditionIndex": 1,
+    "ConditionId": "hp_below",
+    "P1": 0.3,
+    "P2": 0.0
+  },
+  "3": {
+    "TID": 2001,
+    "RuleIndex": 0,
+    "ConditionIndex": 2,
+    "ConditionId": "slot_unused",
+    "Text1": "defense",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "4": {
+    "TID": 2001,
+    "RuleIndex": 1,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "5": {
+    "TID": 2001,
+    "RuleIndex": 1,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 0.0,
+    "P2": 1.6
+  },
+  "6": {
+    "TID": 2001,
+    "RuleIndex": 2,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "7": {
+    "TID": 2001,
+    "RuleIndex": 2,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 3.0,
+    "P2": 7.0
+  },
+  "8": {
+    "TID": 2001,
+    "RuleIndex": 2,
+    "ConditionIndex": 2,
+    "ConditionId": "slot_ready",
+    "Text1": "mobility",
+    "P1": 4.0,
+    "P2": 0.0
+  },
+  "9": {
+    "TID": 2001,
+    "RuleIndex": 3,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "10": {
+    "TID": 2001,
+    "RuleIndex": 3,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 7.0,
+    "P2": 10.0
+  },
+  "11": {
+    "TID": 2001,
+    "RuleIndex": 3,
+    "ConditionIndex": 2,
+    "ConditionId": "attack_cooldown_ready",
+    "P1": 2.0,
+    "P2": 0.0
+  },
+  "12": {
+    "TID": 2001,
+    "RuleIndex": 4,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "13": {
+    "TID": 2002,
+    "RuleIndex": 0,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "14": {
+    "TID": 2002,
+    "RuleIndex": 0,
+    "ConditionIndex": 1,
+    "ConditionId": "hp_below",
+    "P1": 0.5,
+    "P2": 0.0
+  },
+  "15": {
+    "TID": 2002,
+    "RuleIndex": 0,
+    "ConditionIndex": 2,
+    "ConditionId": "ability_ready",
+    "Text1": "werewolf.spell",
+    "P1": 20.0,
+    "P2": 0.0
+  },
+  "16": {
+    "TID": 2002,
+    "RuleIndex": 1,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "17": {
+    "TID": 2002,
+    "RuleIndex": 1,
+    "ConditionIndex": 1,
+    "ConditionId": "slot_unused",
+    "Text1": "alert",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "18": {
+    "TID": 2002,
+    "RuleIndex": 2,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "19": {
+    "TID": 2002,
+    "RuleIndex": 2,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 0.0,
+    "P2": 2.4
+  },
+  "20": {
+    "TID": 2002,
+    "RuleIndex": 2,
+    "ConditionIndex": 2,
+    "ConditionId": "ability_ready",
+    "Text1": "werewolf.heavy",
+    "P1": 4.0,
+    "P2": 0.0
+  },
+  "21": {
+    "TID": 2002,
+    "RuleIndex": 3,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "22": {
+    "TID": 2002,
+    "RuleIndex": 3,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 0.0,
+    "P2": 2.4
+  },
+  "23": {
+    "TID": 2002,
+    "RuleIndex": 3,
+    "ConditionIndex": 2,
+    "ConditionId": "ability_ready",
+    "Text1": "werewolf.pounce",
+    "P1": 2.0,
+    "P2": 0.0
+  },
+  "24": {
+    "TID": 2002,
+    "RuleIndex": 4,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "25": {
+    "TID": 2002,
+    "RuleIndex": 4,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 6.0,
+    "P2": 11.0
+  },
+  "26": {
+    "TID": 2002,
+    "RuleIndex": 4,
+    "ConditionIndex": 2,
+    "ConditionId": "ability_ready",
+    "Text1": "werewolf.ranged",
+    "P1": 4.0,
+    "P2": 0.0
+  },
+  "27": {
+    "TID": 2002,
+    "RuleIndex": 5,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  },
+  "28": {
+    "TID": 2002,
+    "RuleIndex": 5,
+    "ConditionIndex": 1,
+    "ConditionId": "in_range",
+    "P1": 0.0,
+    "P2": 2.4
+  },
+  "29": {
+    "TID": 2002,
+    "RuleIndex": 5,
+    "ConditionIndex": 2,
+    "ConditionId": "attack_cooldown_ready",
+    "P1": 1.0,
+    "P2": 0.0
+  },
+  "33": {
+    "TID": 2002,
+    "RuleIndex": 7,
+    "ConditionIndex": 0,
+    "ConditionId": "has_target",
+    "P1": 0.0,
+    "P2": 0.0
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "1": {
+    "TID": 2001,
+    "RuleIndex": 0,
+    "Action": "ability",
+    "AbilityId": "shell.hide"
+  },
+  "2": {
+    "TID": 2001,
+    "RuleIndex": 1,
+    "Action": "ability",
+    "AbilityId": "shell.melee"
+  },
+  "3": {
+    "TID": 2001,
+    "RuleIndex": 2,
+    "Action": "ability",
+    "AbilityId": "shell.roll"
+  },
+  "4": {
+    "TID": 2001,
+    "RuleIndex": 3,
+    "Action": "ability",
+    "AbilityId": "shell.ranged"
+  },
+  "5": {
+    "TID": 2001,
+    "RuleIndex": 4,
+    "Action": "chase"
+  },
+  "6": {
+    "TID": 2001,
+    "RuleIndex": 5,
+    "Action": "idle"
+  },
+  "7": {
+    "TID": 2002,
+    "RuleIndex": 0,
+    "Action": "ability",
+    "AbilityId": "werewolf.spell"
+  },
+  "8": {
+    "TID": 2002,
+    "RuleIndex": 1,
+    "Action": "ability",
+    "AbilityId": "werewolf.alert"
+  },
+  "9": {
+    "TID": 2002,
+    "RuleIndex": 2,
+    "Action": "ability",
+    "AbilityId": "werewolf.heavy"
+  },
+  "10": {
+    "TID": 2002,
+    "RuleIndex": 3,
+    "Action": "ability",
+    "AbilityId": "werewolf.pounce",
+    "Slot": "secondary_attack"
+  },
+  "11": {
+    "TID": 2002,
+    "RuleIndex": 4,
+    "Action": "ability",
+    "AbilityId": "werewolf.ranged"
+  },
+  "12": {
+    "TID": 2002,
+    "RuleIndex": 5,
+    "Action": "ability",
+    "AbilityId": "werewolf.melee",
+    "Slot": "primary_attack"
+  },
+  "14": {
+    "TID": 2002,
+    "RuleIndex": 7,
+    "Action": "chase"
+  },
+  "15": {
+    "TID": 2002,
+    "RuleIndex": 8,
+    "Action": "idle"
+  }
+}

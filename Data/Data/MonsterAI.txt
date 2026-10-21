@@ -1,0 +1,28 @@
+{
+  "2001": {
+    "TID": 2001,
+    "Name": "Shell",
+    "viewRange": 10.0,
+    "loseTargetRange": 13.0,
+    "scanInterval": 0.2,
+    "runSpeed": 4.0,
+    "turnSpeed": 10.0,
+    "stoppingDistance": 1.2,
+    "hitStunDuration": 0.4,
+    "speedParameter": "MoveSpeed",
+    "deadParameter": "IsDead"
+  },
+  "2002": {
+    "TID": 2002,
+    "Name": "Werewolf",
+    "viewRange": 12.0,
+    "loseTargetRange": 15.0,
+    "scanInterval": 0.2,
+    "runSpeed": 2.3,
+    "turnSpeed": 12.0,
+    "stoppingDistance": 2.2,
+    "hitStunDuration": 0.3,
+    "speedParameter": "MoveSpeed",
+    "deadParameter": "IsDead"
+  }
+}

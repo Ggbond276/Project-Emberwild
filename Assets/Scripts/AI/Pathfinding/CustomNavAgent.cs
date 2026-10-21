@@ -1,67 +1,210 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Emberwild.Core.AppLog;
 using UnityEngine;
 
 namespace Emberwild.AI.Pathfinding
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class CustomNavAgent : MonoBehaviour
     {
-        [Header("寻路参数")]
-        [Tooltip("实体的移动速度")]
-        public float moveSpeed = 4f;
-        [Tooltip("实体转向目标方向的平滑速度")]
-        public float turnSpeed = 10f;
-        [Tooltip("到达目标多近的距离时自动刹车")]
-        public float stoppingDistance = 1.5f;
-        [Tooltip("每隔多少秒重新向 A* 引擎请求一次最新路线 (值越大性能越好，但反应越迟钝)")]
-        public float pathUpdateInterval = 0.2f;
-
-        // 新增这个参数
-        [Tooltip("【平滑优化】航点切换距离：离当前格子多近时提前看向下一个格子(值越大转弯越圆滑)")]
-        public float nextWaypointDistance = 0.5f;
-
-
-        private Rigidbody _rb;
-        private List<Node> _currentPath;
-        private Vector3 _destination;
-        private bool _hasDestination = false;
-        private float _lastPathUpdateTime;
-
-        /// <summary>移动锁：锁定期间不吃任何位移（含物理推挤），用于攻击/受击等定身场景。</summary>
-        private bool _motionLocked;
-
-        /// <summary>基础约束：只冻结旋转，位置可动。</summary>
+        #region 移动约束常量 (Movement Constraints)
         private const RigidbodyConstraints BaseConstraints =
             RigidbodyConstraints.FreezeRotationX |
             RigidbodyConstraints.FreezeRotationY |
             RigidbodyConstraints.FreezeRotationZ;
 
-        /// <summary>锁定约束：在基础之上再冻结水平位移，Y 轴保留以维持重力。</summary>
         private const RigidbodyConstraints LockedConstraints =
             BaseConstraints |
             RigidbodyConstraints.FreezePositionX |
             RigidbodyConstraints.FreezePositionZ;
+        #endregion
 
-        /// <summary>
-        /// 获取当前实体的实际移动速度向量长度。
-        /// 通常用于传递给 Animator 动画状态机（如 animator.SetFloat("Speed", agent.VelocityMagnitude)）以驱动跑动动画。
-        /// </summary>
+        #region 本地核心组件 (Local Components)
+        private Rigidbody _rb;
+        #endregion
+
+        #region 寻路配置 (Navigation Configuration)
+        // 寻路参数
+        [Header("寻路参数")]
+        [HideInInspector]
+        [Tooltip("实体的移动速度")]
+        public float moveSpeed = 4f;
+
+        [HideInInspector]
+        [Tooltip("实体转向目标方向的平滑速度")]
+        public float turnSpeed = 10f;
+
+        [HideInInspector]
+        [Tooltip("到达目标多近的距离时自动刹车")]
+        public float stoppingDistance = 1.5f;
+
+        [Tooltip("每隔多少秒重新向 A* 引擎请求一次最新路线")]
+        public float pathUpdateInterval = 0.2f;
+
+        [Tooltip("离当前格子多近时提前看向下一个格子")]
+        public float nextWaypointDistance = 0.5f;
+        #endregion
+
+        #region 寻路运行时状态 (Navigation Runtime State)
+        // 当前路径与移动状态
+        private List<Node> _currentPath;
+        private Vector3 _destination;
+        private bool _hasDestination;
+        private float _lastPathUpdateTime;
+        private bool _noPathReported;
+        private float _stalledTime;
+        private float _directFallbackUntil;
+        private bool _motionLocked;
+        #endregion
+
+        #region 移动状态查询 (Movement Queries)
+        public bool HasDestination => _hasDestination;
+        public bool IsMotionLocked => _motionLocked;
+        public int PathNodeCount => _currentPath != null ? _currentPath.Count : 0;
+        public Vector3 CurrentVelocity => _rb != null ? _rb.velocity : Vector3.zero;
+        public Vector3 Destination => _destination;
         public float VelocityMagnitude => _rb.velocity.magnitude;
+        #endregion
 
-
-        void Awake()
+        #region Unity 生命周期与出生重置 (Lifecycle & Spawn Reset)
+        /// <summary>获取 Rigidbody 并应用基础物理约束。</summary>
+        private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
             _rb.constraints = BaseConstraints;
         }
 
-        /// <summary>
-        /// 锁定/解锁移动。锁定后完全定在原地，不受自己的速度也不受外力推挤。
-        /// 攻击、受击、施法、姿态这类"必须站住"的状态在 OnEnter 锁、OnExit 解锁。
-        /// </summary>
+        /// <summary>清除路径、速度和移动锁，供池对象重新出生。</summary>
+        public void ResetForSpawn()
+        {
+            if (_rb == null)
+                _rb = GetComponent<Rigidbody>();
+
+            _hasDestination = false;
+            _currentPath = null;
+            _destination = Vector3.zero;
+            _lastPathUpdateTime = 0f;
+            _noPathReported = false;
+            _stalledTime = 0f;
+            _directFallbackUntil = 0f;
+
+            if (_rb != null)
+            {
+                _rb.velocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+                _rb.constraints = BaseConstraints;
+            }
+
+            SetMotionLocked(true);
+        }
+        #endregion
+
+        #region 物理寻路更新 (Physics Path Update)
+        /// <summary>按固定物理帧更新寻路和 Rigidbody 速度。</summary>
+        private void FixedUpdate()
+        {
+            if (_motionLocked) return;
+            if (!_hasDestination) return;
+
+            float distanceToTarget = Vector3.Distance(transform.position, _destination);
+            if (distanceToTarget <= stoppingDistance)
+            {
+                Stop();
+                return;
+            }
+
+            if (Time.time - _lastPathUpdateTime > pathUpdateInterval)
+            {
+                _currentPath = AStarAlgorithm.FindPath(transform.position, _destination);
+                _lastPathUpdateTime = Time.time;
+                if (_currentPath == null || _currentPath.Count == 0)
+                {
+                    if (!_noPathReported)
+                    {
+                        AppLog.Warning("Pathfinding",
+                            $"{name}: no A* path to {_destination}. Check grid bounds and obstacle mask.");
+                        _noPathReported = true;
+                    }
+                    _directFallbackUntil = Time.time + pathUpdateInterval;
+                }
+                else
+                {
+                    _noPathReported = false;
+                }
+            }
+
+            if (Time.time < _directFallbackUntil)
+            {
+                MoveDirectlyToDestination();
+                return;
+            }
+
+            if (_currentPath == null || _currentPath.Count == 0) return;
+
+            float distanceToWaypoint = Vector2.Distance(
+                new Vector2(transform.position.x, transform.position.z),
+                new Vector2(_currentPath[0].worldPos.x, _currentPath[0].worldPos.z));
+
+            if (distanceToWaypoint < nextWaypointDistance)
+            {
+                _currentPath.RemoveAt(0);
+                if (_currentPath.Count == 0) return;
+            }
+
+            Vector3 nextWaypoint = _currentPath[0].worldPos;
+            Vector3 moveDir = (nextWaypoint - transform.position).normalized;
+            moveDir.y = 0;
+
+            _rb.velocity = new Vector3(
+                moveDir.x * moveSpeed,
+                _rb.velocity.y,
+                moveDir.z * moveSpeed);
+
+            if (moveDir != Vector3.zero)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
+                _rb.rotation = Quaternion.Slerp(
+                    _rb.rotation,
+                    targetRot,
+                    Time.fixedDeltaTime * turnSpeed);
+            }
+
+            float horizontalSpeed = new Vector2(_rb.velocity.x, _rb.velocity.z).magnitude;
+            _stalledTime = horizontalSpeed < 0.05f
+                ? _stalledTime + Time.fixedDeltaTime
+                : 0f;
+
+            if (_stalledTime > 0.5f)
+            {
+                AppLog.Warning("Pathfinding",
+                    $"{name}: path exists but movement is blocked. Using direct chase fallback.");
+                _currentPath = null;
+                _stalledTime = 0f;
+                _directFallbackUntil = Time.time + pathUpdateInterval;
+            }
+        }
+
+        /// <summary>在没有 A* 路径时沿目标方向直接移动。</summary>
+        private void MoveDirectlyToDestination()
+        {
+            Vector3 direction = _destination - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.0001f) return;
+
+            direction.Normalize();
+            _rb.velocity = new Vector3(
+                direction.x * moveSpeed,
+                _rb.velocity.y,
+                direction.z * moveSpeed);
+            _rb.rotation = Quaternion.Slerp(
+                _rb.rotation,
+                Quaternion.LookRotation(direction, Vector3.up),
+                Time.fixedDeltaTime * turnSpeed);
+        }
+        #endregion
+
+        #region 移动指令 (Movement Commands)
+        /// <summary>锁定或解锁移动。</summary>
         public void SetMotionLocked(bool locked)
         {
             if (_rb == null) return;
@@ -82,23 +225,18 @@ namespace Emberwild.AI.Pathfinding
             }
         }
 
-        /// <summary>
-        /// 【指令】命令实体开始向目标坐标移动。
-        /// 内部会自动启动定时寻路计算，并在抵达 stoppingDistance 距离后自动停止。
-        /// </summary>
-        /// <param name="targetPos">最终要去的世界坐标</param>
+        /// <summary>设置下一个寻路目的地。</summary>
         public void SetDestination(Vector3 targetPos)
         {
             if (_motionLocked) return;
 
             _destination = targetPos;
             _hasDestination = true;
+            _noPathReported = false;
+            _stalledTime = 0f;
         }
 
-        /// <summary>
-        /// 【指令】命令实体立即紧急刹车。
-        /// 会清空当前正在追踪的路线，并消除水平面的移动惯性，但保留重力下落表现。
-        /// </summary>
+        /// <summary>立即停止移动并清空路径。</summary>
         public void Stop()
         {
             _hasDestination = false;
@@ -106,12 +244,7 @@ namespace Emberwild.AI.Pathfinding
             _rb.velocity = new Vector3(0, _rb.velocity.y, 0);
         }
 
-        /// <summary>
-        /// 【指令】立即面向目标世界坐标(仅绕 Y 轴瞬时转向)。
-        /// 供攻击等"需要瞬间转正朝向"的场景使用;移动中的平滑转向由 FixedUpdate 的 Slerp 负责,这里是一次性硬转。
-        /// 同时清零角速度,避免残留角速度引起自旋。
-        /// </summary>
-        /// <param name="worldTarget">要面向的世界坐标(通常是玩家位置)</param>
+        /// <summary>立即面向指定世界坐标。</summary>
         public void FaceTowards(Vector3 worldTarget)
         {
             if (_rb == null) return;
@@ -120,11 +253,11 @@ namespace Emberwild.AI.Pathfinding
             dir.y = 0f;
             if (dir.sqrMagnitude < 0.0001f) return;
 
-            // 清掉可能残留的角速度,再直接锁定朝向,杜绝自旋
             _rb.angularVelocity = Vector3.zero;
             _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
         }
 
+        /// <summary>沿指定方向直接设置水平速度。</summary>
         public void SetDirectVelocity(Vector3 direction, float speed)
         {
             if (_rb == null || _motionLocked) return;
@@ -138,77 +271,27 @@ namespace Emberwild.AI.Pathfinding
             _rb.rotation = Quaternion.LookRotation(dir, Vector3.up);
             _rb.velocity = new Vector3(dir.x * speed, _rb.velocity.y, dir.z * speed);
         }
+        #endregion
 
-        void FixedUpdate()
+        #region 编辑器路径显示 (Gizmos)
+        /// <summary>在 Scene 视图中绘制当前 A* 路径。</summary>
+        private void OnDrawGizmos()
         {
-            if (_motionLocked) return;
-            if (!_hasDestination) return;
+            if (_currentPath == null || _currentPath.Count == 0) return;
 
-            float distanceToTarget = Vector3.Distance(transform.position, _destination);
-            if (distanceToTarget <= stoppingDistance)
+            Gizmos.color = Color.black;
+            for (int i = 0; i < _currentPath.Count; i++)
             {
-                Stop();
-                return;
-            }
+                Gizmos.DrawWireCube(
+                    _currentPath[i].worldPos,
+                    new Vector3(0.8f, 0.2f, 0.8f));
 
-            if (Time.time - _lastPathUpdateTime > pathUpdateInterval)
-            {
-                _currentPath = AStarAlgorithm.FindPath(transform.position, _destination);
-                _lastPathUpdateTime = Time.time;
-            }
-
-            // 3. 按照算好的路进行物理移动
-            if (_currentPath != null && _currentPath.Count > 0)
-            {
-                // 【核心优化：吃航点机制】
-                // 只计算水平面 (X和Z轴) 的距离，忽略身高导致的 Y 轴误差
-                float distanceToWaypoint = Vector2.Distance(
-                    new Vector2(transform.position.x, transform.position.z),
-                    new Vector2(_currentPath[0].worldPos.x, _currentPath[0].worldPos.z)
-                );
-
-                // 如果离当前目标格子已经足够近了，直接把它从路径里踢掉，准备去下一个点！
-                if (distanceToWaypoint < nextWaypointDistance)
+                if (i < _currentPath.Count - 1)
                 {
-                    _currentPath.RemoveAt(0);
-                    // 剔除后如果发现已经没路了（到终点了），直接返回
-                    if (_currentPath.Count == 0) return;
-                }
-
-                // 获取(更新后的)下一个目标点
-                Vector3 nextWaypoint = _currentPath[0].worldPos;
-                Vector3 moveDir = (nextWaypoint - transform.position).normalized;
-                moveDir.y = 0; // 锁死 Y 轴，防止上天入地
-
-                _rb.velocity = new Vector3(moveDir.x * moveSpeed, _rb.velocity.y, moveDir.z * moveSpeed);
-
-                if (moveDir != Vector3.zero)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(moveDir, Vector3.up);
-                    _rb.rotation = Quaternion.Slerp(_rb.rotation, targetRot, Time.fixedDeltaTime * turnSpeed);
+                    Gizmos.DrawLine(_currentPath[i].worldPos, _currentPath[i + 1].worldPos);
                 }
             }
         }
-
-        /// <summary>
-        /// 编辑器可视化：让带有此 Agent 的实体，能在 Scene 窗口中自动画出属于自己的独立路线。
-        /// </summary>
-        void OnDrawGizmos()
-        {
-            if (_currentPath != null && _currentPath.Count > 0)
-            {
-                Gizmos.color = Color.black;
-                for (int i = 0; i < _currentPath.Count; i++)
-                {
-                    // 使用 DrawWireCube 绘制镂空的线框方块，完美解决遮挡问题
-                    Gizmos.DrawWireCube(_currentPath[i].worldPos, new Vector3(0.8f, 0.2f, 0.8f));
-
-                    if (i < _currentPath.Count - 1)
-                    {
-                        Gizmos.DrawLine(_currentPath[i].worldPos, _currentPath[i + 1].worldPos);
-                    }
-                }
-            }
-        }
+        #endregion
     }
 }
