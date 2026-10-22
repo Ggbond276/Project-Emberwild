@@ -187,12 +187,12 @@ Key, TID, RuleIndex, Action, AbilityId, Slot
 
 ```text
 Key, TID, RuleIndex, ConditionIndex, ConditionId,
-Text1, Text2, P1, P2
+ConditionValue
 ```
 
 通过 `TID + RuleIndex` 关联 `MonsterBehavior`，通过 `ConditionIndex`
-确定同一规则中的条件顺序。`Text1`、`Text2` 用于能力 ID、槽 ID 等字符串参数，
-`P1`、`P2` 用于距离、血量阈值和冷却等数值参数。
+确定同一规则中的条件顺序。`ConditionValue` 是条件参数，只由对应条件读取；
+条件不需要数值时保持空白，生成的 JSON 会省略该字段。
 
 ### 4.5 MonsterAnimation
 
@@ -290,16 +290,12 @@ Pounce 使用原地 `attack` 执行器，不产生位移。Melee 使用 1 秒全
 | `has_target` | 无 |
 | `is_dead` | 无 |
 | `recently_hit` | 无 |
-| `hp_below` | `p1` 为 0 到 1 的血量比例 |
-| `in_range` | `p1` 最小距离，`p2` 最大距离 |
-| `ability_ready` | `text1` 能力 ID；冷却读取 Ability.Cooldown |
-| `slot_ready` | `text1` 槽 ID；冷却和距离读取 Ability |
-| `slot_unused` | `text1` 槽 ID |
-| `attack_cooldown_ready` | `p1` 冷却 |
+| `hp_below` | `ConditionValue` 为 0 到 1 的血量比例 |
+| `attack_cooldown_ready` | `ConditionValue` 为冷却秒数 |
 
 技能的距离、冷却和一次性使用限制以 `MonsterAbility` 为准。普通技能规则
-不需要重复填写 `in_range`、`ability_ready`、`slot_ready` 或 `slot_unused`。
-这些条件保留用于兼容旧配置或表达额外策略限制。
+不再填写距离条件，避免与 Ability 自身的 `MinRange`、`MaxRange`、
+`Cooldown` 和 `OncePerCombat` 形成双重判断。
 
 动作支持：
 

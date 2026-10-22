@@ -24,19 +24,9 @@ namespace Emberwild.AI.Enemy.Ability
                 [BehaviorConditions.Always] = (c, bb, a, attr, def, now) => true,
                 [BehaviorConditions.HasTarget] = (c, bb, a, attr, def, now) => bb.Target != null,
                 [BehaviorConditions.IsDead] = (c, bb, a, attr, def, now) => attr != null && attr.IsDead,
-                [BehaviorConditions.RecentlyHit] = (c, bb, a, attr, def, now) =>
-                    now - bb.LastHitTime < def.hitStunDuration,
-                [BehaviorConditions.HpBelow] = (c, bb, a, attr, def, now) => bb.HpRatio < c.p1,
-                [BehaviorConditions.InRange] = (c, bb, a, attr, def, now) =>
-                    bb.DistanceToTarget >= c.p1 && bb.DistanceToTarget <= c.p2,
-                [BehaviorConditions.AbilityReady] = (c, bb, a, attr, def, now) =>
-                    a.IsAbilityReady(c.text1),
-                [BehaviorConditions.SlotReady] = (c, bb, a, attr, def, now) =>
-                    a.IsSlotReady(c.text1),
-                [BehaviorConditions.SlotUnused] = (c, bb, a, attr, def, now) =>
-                    a.IsSlotUnused(c.text1),
-                [BehaviorConditions.AttackCooldownReady] = (c, bb, a, attr, def, now) =>
-                    a.TimeSinceLastAttack >= c.p1
+                [BehaviorConditions.RecentlyHit] = (c, bb, a, attr, def, now) => now - bb.LastHitTime < def.hitStunDuration,
+                [BehaviorConditions.HpBelow] = (c, bb, a, attr, def, now) => bb.HpRatio < c.conditionValue,
+                [BehaviorConditions.AttackCooldownReady] = (c, bb, a, attr, def, now) => a.TimeSinceLastAttack >= c.conditionValue
             };
         #endregion
 

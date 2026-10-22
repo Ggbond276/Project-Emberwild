@@ -17,10 +17,6 @@ namespace Emberwild.Editor.MonsterAI
         {
             new MonsterAIEditorOption(BehaviorConditions.HasTarget, "有目标"),
             new MonsterAIEditorOption(BehaviorConditions.HpBelow, "血量低于"),
-            new MonsterAIEditorOption(BehaviorConditions.InRange, "距离在区间内（策略）"),
-            new MonsterAIEditorOption(BehaviorConditions.AbilityReady, "技能冷却完成（兼容）"),
-            new MonsterAIEditorOption(BehaviorConditions.SlotReady, "技能槽可用（兼容）"),
-            new MonsterAIEditorOption(BehaviorConditions.SlotUnused, "技能槽未使用（兼容）"),
             new MonsterAIEditorOption(BehaviorConditions.AttackCooldownReady, "攻击冷却完成"),
             new MonsterAIEditorOption(BehaviorConditions.RecentlyHit, "受击硬直中"),
             new MonsterAIEditorOption(BehaviorConditions.IsDead, "已经死亡"),
@@ -59,6 +55,7 @@ namespace Emberwild.Editor.MonsterAI
             new MonsterAIEditorOption(string.Empty, "无"),
             new MonsterAIEditorOption(AnimationSemantics.Melee, "近战攻击"),
             new MonsterAIEditorOption(AnimationSemantics.Heavy, "重攻击"),
+            new MonsterAIEditorOption(AnimationSemantics.AreaMelee, "范围近战攻击"),
             new MonsterAIEditorOption(AnimationSemantics.Pounce, "扑击"),
             new MonsterAIEditorOption(AnimationSemantics.Leap, "跃击"),
             new MonsterAIEditorOption(AnimationSemantics.Ranged, "远程攻击"),
@@ -86,31 +83,11 @@ namespace Emberwild.Editor.MonsterAI
         #endregion
 
         #region 条件参数规则 (Condition Rules)
-        /// <summary>判断条件是否使用技能 ID。</summary>
-        public static bool UsesAbility(string conditionId)
-        {
-            return conditionId == BehaviorConditions.AbilityReady;
-        }
-
-        /// <summary>判断条件是否使用技能槽。</summary>
-        public static bool UsesSlot(string conditionId)
-        {
-            return conditionId == BehaviorConditions.SlotReady
-                || conditionId == BehaviorConditions.SlotUnused;
-        }
-
-        /// <summary>判断条件是否使用 P1 数值。</summary>
-        public static bool UsesP1(string conditionId)
+        /// <summary>判断条件是否使用数值参数。</summary>
+        public static bool UsesConditionValue(string conditionId)
         {
             return conditionId == BehaviorConditions.HpBelow
-                || conditionId == BehaviorConditions.InRange
                 || conditionId == BehaviorConditions.AttackCooldownReady;
-        }
-
-        /// <summary>判断条件是否使用 P2 数值。</summary>
-        public static bool UsesP2(string conditionId)
-        {
-            return conditionId == BehaviorConditions.InRange;
         }
 
         /// <summary>判断是否为编辑器未知条件。</summary>

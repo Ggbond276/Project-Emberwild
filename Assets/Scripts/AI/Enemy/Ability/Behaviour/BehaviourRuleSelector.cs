@@ -17,7 +17,9 @@ namespace Emberwild.AI.Enemy.Ability
         #endregion
 
         #region 规则匹配与决策 (Rule Matching & Decision)
-        /// <summary>返回第一条全部条件成立的行为规则。</summary>
+        /// <summary>
+        /// 返回第一条全部条件成立的行为规则。
+        /// </summary>
         public BehaviourDecision Select(
             EnemyBlackboard blackboard,
             EnemyAbilityRuntime abilities,
@@ -53,7 +55,9 @@ namespace Emberwild.AI.Enemy.Ability
             return Idle();
         }
 
-        /// <summary>判断规则中的条件是否全部成立。</summary>
+        /// <summary>
+        /// 判断规则中的条件是否全部成立。
+        /// </summary>
         private bool MatchesAll(
             BehaviorRuleDefinition rule,
             EnemyBlackboard blackboard,
@@ -79,7 +83,9 @@ namespace Emberwild.AI.Enemy.Ability
             return true;
         }
 
-        /// <summary>创建待机决策。</summary>
+        /// <summary>
+        /// 创建待机决策。
+        /// </summary>
         private static BehaviourDecision Idle()
         {
             return new BehaviourDecision(

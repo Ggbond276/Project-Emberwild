@@ -1,12 +1,13 @@
 namespace Emberwild.AI.Enemy.Ability
 {
+    /// <summary>
+    /// 动画绑定类型 (Animation Binding Types)
+    /// </summary>
     public enum AnimationBindingType
     {
-        #region 动画绑定类型 (Animation Binding Types)
         Trigger,
         Bool,
         Float,
         State
-        #endregion
     }
 }

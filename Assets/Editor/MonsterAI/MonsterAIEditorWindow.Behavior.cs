@@ -194,7 +194,7 @@ namespace Emberwild.Editor.MonsterAI
                 drawElementCallback = (rect, index, active, focused) =>
                 {
                     if (index < 0 || index >= rule.Conditions.Count) return;
-                    DrawConditionElement(rect, profile, rule.Conditions[index]);
+                    DrawConditionElement(rect, rule.Conditions[index]);
                 },
                 onReorderCallback = list => _store.MarkDirty(),
                 onAddCallback = list =>
@@ -213,17 +213,13 @@ namespace Emberwild.Editor.MonsterAI
 
         private float ConditionHeight(MonsterBehaviorConditionRow condition)
         {
-            return MonsterAIEditorOptions.UsesAbility(condition.ConditionId)
-                || MonsterAIEditorOptions.UsesSlot(condition.ConditionId)
-                || MonsterAIEditorOptions.UsesP1(condition.ConditionId)
-                || MonsterAIEditorOptions.UsesP2(condition.ConditionId)
+            return MonsterAIEditorOptions.UsesConditionValue(condition.ConditionId)
                 ? 56f
                 : 30f;
         }
 
         private void DrawConditionElement(
             Rect rect,
-            MonsterEditorProfile profile,
             MonsterBehaviorConditionRow condition)
         {
             EditorGUI.BeginChangeCheck();
@@ -264,66 +260,32 @@ namespace Emberwild.Editor.MonsterAI
                 rect.y + 27f,
                 width,
                 20f);
-            DrawConditionFields(fieldRect, profile, condition);
+            DrawConditionFields(fieldRect, condition);
             if (EditorGUI.EndChangeCheck())
                 _store.MarkDirty();
         }
 
         private void DrawConditionFields(
             Rect rect,
-            MonsterEditorProfile profile,
             MonsterBehaviorConditionRow condition)
         {
-            if (MonsterAIEditorOptions.UsesAbility(condition.ConditionId))
-            {
-                condition.Text1 = DrawAbilityPopupRect(
-                    rect,
-                    condition.Text1,
-                    profile,
-                    false);
-                return;
-            }
-
-            if (MonsterAIEditorOptions.UsesSlot(condition.ConditionId))
-            {
-                condition.Text1 = DrawSlotPopupRect(
-                    rect,
-                    condition.Text1,
-                    profile);
-                return;
-            }
-
             if (condition.ConditionId == BehaviorConditions.HpBelow)
             {
-                condition.P1 = EditorGUI.Slider(
+                condition.ConditionValue = EditorGUI.Slider(
                     rect,
                     new GUIContent("血量低于比例"),
-                    condition.P1,
+                    condition.ConditionValue,
                     0f,
                     1f);
                 return;
             }
 
-            if (condition.ConditionId == BehaviorConditions.InRange)
-            {
-                float half = rect.width * 0.5f;
-                condition.P1 = EditorGUI.FloatField(
-                    new Rect(rect.x, rect.y, half - 2f, rect.height),
-                    new GUIContent("最小距离"),
-                    condition.P1);
-                condition.P2 = EditorGUI.FloatField(
-                    new Rect(rect.x + half + 2f, rect.y, half - 2f, rect.height),
-                    new GUIContent("最大距离"),
-                    condition.P2);
-                return;
-            }
-
             if (condition.ConditionId == BehaviorConditions.AttackCooldownReady)
             {
-                condition.P1 = EditorGUI.FloatField(
+                condition.ConditionValue = EditorGUI.FloatField(
                     rect,
                     new GUIContent("攻击冷却秒数"),
-                    condition.P1);
+                    condition.ConditionValue);
             }
         }
 
@@ -350,63 +312,5 @@ namespace Emberwild.Editor.MonsterAI
         }
         #endregion
 
-        #region 条件下拉工具 (Condition Dropdown Helpers)
-        private static string DrawAbilityPopupRect(
-            Rect rect,
-            string value,
-            MonsterEditorProfile profile,
-            bool allowEmpty)
-        {
-            var values = new List<string> { string.Empty };
-            var labels = new List<string> { allowEmpty ? "无" : "请选择" };
-            values.AddRange(profile.Abilities.Select(row => row.AbilityId));
-            labels.AddRange(profile.Abilities.Select(row => row.AbilityId));
-
-            int index = values.FindIndex(item => string.Equals(
-                item,
-                value,
-                StringComparison.OrdinalIgnoreCase));
-            if (index < 0)
-            {
-                values.Add(value ?? string.Empty);
-                labels.Add($"缺失：{value}");
-                index = values.Count - 1;
-            }
-
-            int next = EditorGUI.Popup(rect, index, labels.ToArray());
-            return values[next];
-        }
-
-        private static string DrawSlotPopupRect(
-            Rect rect,
-            string value,
-            MonsterEditorProfile profile)
-        {
-            var values = new List<string> { string.Empty };
-            var labels = new List<string> { "无" };
-            var slots = profile.Abilities
-                .Where(row => !string.IsNullOrWhiteSpace(row.Slot))
-                .Select(row => row.Slot)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            values.AddRange(slots);
-            labels.AddRange(slots.Select(slot =>
-                MonsterAIEditorOptions.LabelOf(MonsterAIEditorOptions.Slots, slot)));
-
-            int index = values.FindIndex(item => string.Equals(
-                item,
-                value,
-                StringComparison.OrdinalIgnoreCase));
-            if (index < 0)
-            {
-                values.Add(value ?? string.Empty);
-                labels.Add($"缺失：{value}");
-                index = values.Count - 1;
-            }
-
-            int next = EditorGUI.Popup(rect, index, labels.ToArray());
-            return values[next];
-        }
-        #endregion
     }
 }

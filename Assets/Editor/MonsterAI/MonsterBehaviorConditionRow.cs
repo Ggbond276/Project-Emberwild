@@ -7,10 +7,7 @@ namespace Emberwild.Editor.MonsterAI
         public int RuleIndex;
         public int ConditionIndex;
         public string ConditionId;
-        public string Text1;
-        public string Text2;
-        public float P1;
-        public float P2;
+        public float ConditionValue;
         #endregion
     }
 }

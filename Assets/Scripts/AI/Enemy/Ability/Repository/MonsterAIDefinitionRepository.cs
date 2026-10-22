@@ -19,6 +19,7 @@ namespace Emberwild.AI.Enemy.Ability
         #endregion
 
         #region 定义加载与组装 (Definition Loading & Assembly)
+
         /// <summary>
         /// 按 TID 获取并缓存怪物运行时定义。
         /// </summary>
@@ -28,7 +29,9 @@ namespace Emberwild.AI.Enemy.Ability
             return definition;
         }
 
-        /// <summary>尝试获取指定 TID 的怪物定义并返回本次调用的错误。</summary>
+        /// <summary>
+        /// 尝试获取指定 TID 的怪物定义并返回本次调用的错误。
+        /// </summary>
         public static bool TryGet(
             int tid,
             out MonsterAIDefinition definition,
@@ -98,6 +101,7 @@ namespace Emberwild.AI.Enemy.Ability
                 turnSpeed = core.turnSpeed,
                 stoppingDistance = core.stoppingDistance,
                 hitStunDuration = core.hitStunDuration,
+
                 animation = new AnimationProfileDefinition
                 {
                     speedParameter = core.speedParameter,
@@ -105,11 +109,13 @@ namespace Emberwild.AI.Enemy.Ability
                 }
             };
 
+            // 动画映射
             if (manager.MonsterAnimationBindingsByTid.TryGetValue(tid, out var bindings))
             {
                 foreach (var row in bindings.OrderBy(item => item.BindingIndex))
                 {
-                    if (!Enum.TryParse(row.BindingType, true, out AnimationBindingType bindingType))
+                    // 1.检查并转换枚举
+                    if (!Enum.TryParse<AnimationBindingType>(row.BindingType, true, out AnimationBindingType bindingType))
                     {
                         throw new InvalidOperationException(
                             $"Unknown animation binding type '{row.BindingType}' "
@@ -125,6 +131,7 @@ namespace Emberwild.AI.Enemy.Ability
                 }
             }
 
+            // 能力ability表
             if (manager.MonsterAbilitiesByTid.TryGetValue(tid, out var abilities))
             {
                 foreach (var row in abilities)
@@ -154,6 +161,7 @@ namespace Emberwild.AI.Enemy.Ability
                 }
             }
 
+            // 对规则进行分类
             var conditionsByRule = new Dictionary<int, List<MonsterBehaviorConditionDefine>>();
             if (manager.MonsterBehaviorConditionsByTid.TryGetValue(tid, out var conditions))
             {
@@ -164,6 +172,7 @@ namespace Emberwild.AI.Enemy.Ability
                         group => group.OrderBy(item => item.ConditionIndex).ToList());
             }
 
+            // 建立决策树
             if (manager.MonsterBehaviorsByTid.TryGetValue(tid, out var rules))
             {
                 foreach (var row in rules.OrderBy(item => item.RuleIndex))
@@ -182,10 +191,7 @@ namespace Emberwild.AI.Enemy.Ability
                             rule.conditions.Add(
                                 new BehaviorConditionDefinition(condition.ConditionId)
                                 {
-                                    text1 = condition.Text1,
-                                    text2 = condition.Text2,
-                                    p1 = condition.P1,
-                                    p2 = condition.P2
+                                    conditionValue = condition.ConditionValue
                                 });
                         }
                     }

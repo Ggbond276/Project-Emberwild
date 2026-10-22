@@ -60,6 +60,17 @@ namespace Emberwild.Editor.MonsterAI
             if (ability.IsExpanded)
             {
                 EditorGUI.BeginChangeCheck();
+                bool isAttack = ability.Executor == AbilityExecutorIds.Attack
+                    || ability.Executor == AbilityExecutorIds.RangedAttack
+                    || ability.Executor == AbilityExecutorIds.DashAttack;
+                bool isDash = ability.Executor == AbilityExecutorIds.Dash
+                    || ability.Executor == AbilityExecutorIds.DashAttack;
+                bool isStance = ability.Executor == AbilityExecutorIds.Stance;
+                bool locksMovement = ability.Executor == AbilityExecutorIds.Attack
+                    || ability.Executor == AbilityExecutorIds.RangedAttack
+                    || ability.Executor == AbilityExecutorIds.PlayAndWait;
+
+                EditorGUILayout.LabelField("身份与选择", EditorStyles.boldLabel);
                 ability.AbilityId = EditorGUILayout.TextField(
                     new GUIContent("AbilityId", "同一只怪物内必须唯一。"),
                     ability.AbilityId);
@@ -71,8 +82,12 @@ namespace Emberwild.Editor.MonsterAI
                     "执行器",
                     ability.Executor,
                     MonsterAIEditorOptions.Executors);
+                ability.Priority = EditorGUILayout.IntField(
+                    new GUIContent("同槽位优先级", "数值越大越优先尝试。"),
+                    ability.Priority);
 
-                EditorGUILayout.Space(4f);
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.LabelField("动画与时间", EditorStyles.boldLabel);
                 ability.AnimationAction = DrawOptionPopup(
                     "一次性动画语义",
                     ability.AnimationAction,
@@ -89,49 +104,70 @@ namespace Emberwild.Editor.MonsterAI
                 ability.Cooldown = EditorGUILayout.FloatField(
                     new GUIContent("冷却时间（秒）"),
                     ability.Cooldown);
-                ability.HitDelay = EditorGUILayout.FloatField(
-                    new GUIContent("命中延迟（秒）", "能力开始后多久触发攻击判定。"),
-                    ability.HitDelay);
-                ability.Speed = EditorGUILayout.FloatField(
-                    new GUIContent("位移速度", "仅位移类执行器使用。"),
-                    ability.Speed);
+                if (isAttack)
+                {
+                    ability.HitDelay = EditorGUILayout.FloatField(
+                        new GUIContent("命中延迟（秒）", "能力开始后多久触发攻击判定。"),
+                        ability.HitDelay);
+                }
+                if (isDash)
+                {
+                    ability.Speed = EditorGUILayout.FloatField(
+                        new GUIContent("位移速度"),
+                        ability.Speed);
+                }
+
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.LabelField("使用限制", EditorStyles.boldLabel);
                 ability.MinRange = EditorGUILayout.FloatField(
                     new GUIContent("最小距离"),
                     ability.MinRange);
                 ability.MaxRange = EditorGUILayout.FloatField(
                     new GUIContent("最大距离"),
                     ability.MaxRange);
-
-                EditorGUILayout.Space(4f);
-                ability.LockMovement = EditorGUILayout.Toggle(
-                    new GUIContent("执行时锁定移动"),
-                    ability.LockMovement);
-                ability.StopMovementAtEnd = EditorGUILayout.Toggle(
-                    new GUIContent("结束时停止移动"),
-                    ability.StopMovementAtEnd);
                 ability.OncePerCombat = EditorGUILayout.Toggle(
                     new GUIContent("每场战斗只使用一次"),
                     ability.OncePerCombat);
                 ability.CountsAsAttack = EditorGUILayout.Toggle(
                     new GUIContent("计入全局攻击冷却"),
                     ability.CountsAsAttack);
-                ability.Ranged = EditorGUILayout.Toggle(
-                    new GUIContent("远程攻击"),
-                    ability.Ranged);
-                ability.DamageTakenMultiplier = EditorGUILayout.FloatField(
-                    new GUIContent("承伤倍率", "仅持续姿态类能力使用，1 表示不减伤。"),
-                    ability.DamageTakenMultiplier);
-                ability.Priority = EditorGUILayout.IntField(
-                    new GUIContent("同槽位优先级", "数值越大越优先尝试。"),
-                    ability.Priority);
 
-                EditorGUILayout.Space(4f);
-                ability.DamageComboIndex = DrawComboIndexPopup(
-                    profile,
-                    ability.DamageComboIndex);
-                EditorGUILayout.HelpBox(
-                    "选择攻击段后，可在页面底部编辑该段的伤害倍率、判定形状和范围参数。",
-                    MessageType.None);
+                if (locksMovement)
+                {
+                    ability.LockMovement = EditorGUILayout.Toggle(
+                        new GUIContent("执行时锁定移动"),
+                        ability.LockMovement);
+                }
+                if (isDash)
+                {
+                    ability.StopMovementAtEnd = EditorGUILayout.Toggle(
+                        new GUIContent("结束时停止移动"),
+                        ability.StopMovementAtEnd);
+                }
+                if (isStance)
+                {
+                    ability.DamageTakenMultiplier = EditorGUILayout.FloatField(
+                        new GUIContent("承伤倍率", "1 表示不减伤。"),
+                        ability.DamageTakenMultiplier);
+                }
+                if (ability.Executor == AbilityExecutorIds.DashAttack)
+                {
+                    ability.Ranged = EditorGUILayout.Toggle(
+                        new GUIContent("弹道攻击"),
+                        ability.Ranged);
+                }
+
+                if (isAttack)
+                {
+                    EditorGUILayout.Space(8f);
+                    EditorGUILayout.LabelField("攻击配置", EditorStyles.boldLabel);
+                    ability.DamageComboIndex = DrawComboIndexPopup(
+                        profile,
+                        ability.DamageComboIndex);
+                    EditorGUILayout.HelpBox(
+                        "选择攻击段后，可在页面底部编辑该段的伤害倍率和判定参数。",
+                        MessageType.None);
+                }
 
                 if (EditorGUI.EndChangeCheck())
                     _store.MarkDirty();

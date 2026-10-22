@@ -21,7 +21,9 @@ namespace Emberwild.AI.Enemy.Ability
 
         // 动画、能力和行为规则
         public AnimationProfileDefinition animation = new AnimationProfileDefinition();
+        // 能力表
         public List<AbilityDefinition> abilities = new List<AbilityDefinition>();
+        // 行为树
         public List<BehaviorRuleDefinition> behavior = new List<BehaviorRuleDefinition>();
         #endregion
     }

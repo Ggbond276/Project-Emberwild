@@ -19,12 +19,14 @@ namespace Emberwild.AI.Enemy.Ability
         #endregion
 
         #region 能力进度 (Ability Progress)
-        /// <summary>到达命中时间后发布攻击事件。</summary>
+        /// <summary>
+        /// 到达命中时间后发布攻击事件。
+        /// </summary>
         public bool Tick(
             AbilityDefinition definition,
             IEnemyAbilityContext context,
             float deltaTime,
-            float elapsed)
+            float elapsed) // 从 Start 到现在过了多久，由运行时算好（Time.time - _activeStartTime）
         {
             if (!_hitEmitted && elapsed >= definition.hitDelay)
             {

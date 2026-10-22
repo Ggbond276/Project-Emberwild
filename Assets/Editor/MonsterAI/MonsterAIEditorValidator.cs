@@ -305,9 +305,6 @@ namespace Emberwild.Editor.MonsterAI
                         rule.Conditions[conditionIndex],
                         ruleIndex,
                         conditionIndex,
-                        rule.Rule.Action == BehaviorActions.Ability,
-                        abilityIds,
-                        slots,
                         issues);
                 }
             }
@@ -318,9 +315,6 @@ namespace Emberwild.Editor.MonsterAI
             MonsterBehaviorConditionRow condition,
             int ruleIndex,
             int conditionIndex,
-            bool isAbilityAction,
-            HashSet<string> abilityIds,
-            HashSet<string> slots,
             List<MonsterAIEditorIssue> issues)
         {
             int tid = profile.TID;
@@ -334,50 +328,16 @@ namespace Emberwild.Editor.MonsterAI
                 return;
             }
 
-            if (MonsterAIEditorOptions.UsesAbility(condition.ConditionId)
-                && !abilityIds.Contains(condition.Text1 ?? string.Empty))
-            {
-                AddError(issues, tid, $"{location} 引用了不存在的技能：{condition.Text1}");
-            }
-            if (MonsterAIEditorOptions.UsesSlot(condition.ConditionId)
-                && !slots.Contains(condition.Text1 ?? string.Empty))
-            {
-                AddError(issues, tid, $"{location} 引用了不存在的技能槽：{condition.Text1}");
-            }
             if (condition.ConditionId == BehaviorConditions.HpBelow
-                && (condition.P1 <= 0f || condition.P1 > 1f))
+                && (condition.ConditionValue <= 0f
+                    || condition.ConditionValue > 1f))
             {
                 AddError(issues, tid, $"{location} 的血量比例必须在 0 到 1 之间。");
             }
-            if (condition.ConditionId == BehaviorConditions.InRange
-                && condition.P2 < condition.P1)
-            {
-                AddError(issues, tid, $"{location} 的最大距离小于最小距离。");
-            }
             if (condition.ConditionId == BehaviorConditions.AttackCooldownReady
-                && condition.P1 < 0f)
+                && condition.ConditionValue < 0f)
             {
                 AddError(issues, tid, $"{location} 的冷却时间不能为负数。");
-            }
-
-            if (isAbilityAction
-                && (condition.ConditionId == BehaviorConditions.AbilityReady
-                    || condition.ConditionId == BehaviorConditions.SlotReady
-                    || condition.ConditionId == BehaviorConditions.SlotUnused))
-            {
-                AddError(
-                    issues,
-                    tid,
-                    $"{location} 使用了已废弃的能力可用性条件；"
-                    + "冷却、范围和一次性使用必须只在能力表中维护。");
-            }
-            else if (isAbilityAction && condition.ConditionId == BehaviorConditions.InRange)
-            {
-                AddWarning(
-                    issues,
-                    tid,
-                    $"{location} 使用额外距离策略条件；"
-                    + "确认它是在进一步收窄能力范围，而不是重复填写技能范围。");
             }
         }
         #endregion

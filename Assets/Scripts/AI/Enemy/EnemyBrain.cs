@@ -104,10 +104,12 @@ namespace Emberwild.AI.Enemy
         /// </summary>
         private void Awake()
         {
+            // 1.获取组件
             ResolveComponents();
             ResolveAnimator();
             if (_startupFailed) return;
 
+            // 2.根据ID注入配置
             ConfigureRuntime(_entity != null ? _entity.TID : 0);
         }
 
@@ -224,6 +226,7 @@ namespace Emberwild.AI.Enemy
                 return;
             }
 
+            // 从底层数据仓库拉取这个 TID 对应的全部配置数据 (包含基础属性、技能表、行为树等)
             if (!MonsterAIDefinitionRepository.TryGet(
                     tid,
                     out var definition,
@@ -233,19 +236,25 @@ namespace Emberwild.AI.Enemy
                 return;
             }
 
-            definition.TID = tid;
+            definition.TID = tid; // 防填表失误
+            // 校验拉取到的数据是否完整合法，防止脏数据导致游戏崩溃
             if (!MonsterAIDefinitionValidator.Validate(definition, out string error))
             {
                 FailStartup(error);
                 return;
             }
 
+
+            // 1. 注入动画组件 (皮肉/骨骼)
+            // 把 MonsterAnimation 表里的映射规则 (SemanticKey -> Parameter) 喂给动画适配器
             if (!Animator.Configure(definition.animation))
             {
                 FailStartup("animation profile validation failed.");
                 return;
             }
 
+            // 2. 注入感知组件 (眼睛/雷达)
+            // 把视野范围、脱战范围、扫描频率喂给索敌组件
             if (_perception != null)
             {
                 _perception.Configure(
@@ -254,6 +263,8 @@ namespace Emberwild.AI.Enemy
                     definition.scanInterval);
             }
 
+            // 3. 注入移动寻路组件 (双腿)
+            // 把跑动速度、转身速度、攻击时的停止距离喂给 NavAgent 导航引擎
             if (_agent != null)
             {
                 _agent.moveSpeed = definition.runSpeed;
@@ -261,8 +272,15 @@ namespace Emberwild.AI.Enemy
                 _agent.stoppingDistance = definition.stoppingDistance;
             }
 
+            // 4. 注入大脑和技能库 (中央处理器与武器库)
+            // 缓存整套定义数据
             _definition = definition;
+
+            // 把 MonsterAbility 表里的技能列表实例化，装进怪物的“技能运行环境”中
             _abilities = new EnemyAbilityRuntime(this, definition.abilities);
+            // 把 MonsterBehavior 和 Condition 拼好的那棵“决策树”，塞进怪物的逻辑大脑里
+
+
             _behavior = new BehaviourRuleSelector(definition);
             _mode = RuntimeMode.Idle;
 
@@ -354,20 +372,24 @@ namespace Emberwild.AI.Enemy
         /// </summary>
         private void Update()
         {
-            // 1.安全性拦截
+            // 安全性拦截
+            // 1.怪物是否初始化完毕
+            // 2.配置表是否加载成功
+            // 3.怪物是否变成了尸体
             if (!_initialized || _startupFailed || _mode == RuntimeMode.Dead) return;
 
             // 2.perception感知周围，更新BB数据
             _perception.Tick(BB);
             RefreshHpRatio();
 
-            // 3.生死判定
+            // 3.个收集完数据之后，进行一次死亡结算
             if (IsDead())
             {
                 EnterDead();
                 return;
             }
 
+            // 4.处于受击硬直状态
             if (_mode == RuntimeMode.Stagger)
             {
                 _abilities.Tick(Time.deltaTime);
@@ -376,16 +398,20 @@ namespace Emberwild.AI.Enemy
                 return;
             }
 
+            // 5.正在释放技能
             if (_abilities.IsActive)
             {
                 _abilities.Tick(Time.deltaTime);
                 return;
             }
 
+            // 每帧Tick调用
             EvaluateBehavior();
         }
 
-        /// <summary>使用运行时战斗属性刷新黑板血量比例。</summary>
+        /// <summary>
+        /// 使用运行时战斗属性刷新黑板血量比例。
+        /// </summary>
         private void RefreshHpRatio()
         {
             var attribute = _entity != null ? _entity.Attribute : null;

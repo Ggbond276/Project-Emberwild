@@ -3,128 +3,100 @@
     "TID": 2001,
     "RuleIndex": 0,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "2": {
     "TID": 2001,
     "RuleIndex": 0,
     "ConditionIndex": 1,
     "ConditionId": "hp_below",
-    "P1": 0.3,
-    "P2": 0.0
+    "ConditionValue": 0.3
   },
   "3": {
     "TID": 2001,
     "RuleIndex": 1,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "4": {
     "TID": 2001,
     "RuleIndex": 2,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "5": {
     "TID": 2001,
     "RuleIndex": 3,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "6": {
     "TID": 2001,
     "RuleIndex": 3,
     "ConditionIndex": 1,
     "ConditionId": "attack_cooldown_ready",
-    "P1": 2.0,
-    "P2": 0.0
+    "ConditionValue": 2.0
   },
   "7": {
     "TID": 2001,
     "RuleIndex": 4,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "8": {
     "TID": 2002,
     "RuleIndex": 0,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "9": {
     "TID": 2002,
     "RuleIndex": 0,
     "ConditionIndex": 1,
     "ConditionId": "hp_below",
-    "P1": 0.5,
-    "P2": 0.0
+    "ConditionValue": 0.5
   },
   "10": {
     "TID": 2002,
     "RuleIndex": 1,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "11": {
     "TID": 2002,
     "RuleIndex": 2,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "12": {
     "TID": 2002,
     "RuleIndex": 3,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "13": {
     "TID": 2002,
     "RuleIndex": 4,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "14": {
     "TID": 2002,
     "RuleIndex": 5,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   },
   "15": {
     "TID": 2002,
     "RuleIndex": 5,
     "ConditionIndex": 1,
     "ConditionId": "attack_cooldown_ready",
-    "P1": 1.0,
-    "P2": 0.0
+    "ConditionValue": 1.0
   },
   "16": {
     "TID": 2002,
     "RuleIndex": 7,
     "ConditionIndex": 0,
-    "ConditionId": "has_target",
-    "P1": 0.0,
-    "P2": 0.0
+    "ConditionId": "has_target"
   }
 }
