@@ -23,6 +23,8 @@ namespace Emberwild.Core.Test
         [SerializeField] private Vector2 _gridWorldSize = new Vector2(20, 20);
         [Tooltip("单个寻路节点的检测半径")]
         [SerializeField] private float _nodeRadius = 0.1f;
+        [Tooltip("角色用于检测障碍物的碰撞半径")]
+        [SerializeField] private float _agentRadius = 0.4f;
         [Tooltip("障碍物图层，用于标记不可行走的区域")]
         [SerializeField] private LayerMask _obstacleMask;
 
@@ -75,7 +77,12 @@ namespace Emberwild.Core.Test
             Debug.Log("<color=yellow>[2/4] 初始化环境系统(寻路网格)...</color>");
 
             // 调度我们刚刚重构剥离 MonoBehaviour 后的 GridManager
-            GridManager.Instance.Init(_gridOrigin, _gridWorldSize, _nodeRadius, _obstacleMask);
+            GridManager.Instance.Init(
+                _gridOrigin,
+                _gridWorldSize,
+                _nodeRadius,
+                _agentRadius,
+                _obstacleMask);
         }
 
         /// <summary>

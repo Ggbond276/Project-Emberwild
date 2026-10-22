@@ -41,7 +41,7 @@ namespace Emberwild.AI.Pathfinding
         [Tooltip("每隔多少秒重新向 A* 引擎请求一次最新路线")]
         public float pathUpdateInterval = 0.2f;
 
-        [Tooltip("离当前格子多近时提前看向下一个格子")]
+        [Tooltip("离当前格子多近时提前看向下一个格子，最多提前一个节点直径")]
         public float nextWaypointDistance = 0.5f;
         #endregion
 
@@ -144,8 +144,11 @@ namespace Emberwild.AI.Pathfinding
             float distanceToWaypoint = Vector2.Distance(
                 new Vector2(transform.position.x, transform.position.z),
                 new Vector2(_currentPath[0].worldPos.x, _currentPath[0].worldPos.z));
+            float waypointTolerance = Mathf.Min(
+                nextWaypointDistance,
+                Mathf.Max(0.01f, GridManager.Instance.NodeRadius * 2f));
 
-            if (distanceToWaypoint < nextWaypointDistance)
+            if (distanceToWaypoint < waypointTolerance)
             {
                 _currentPath.RemoveAt(0);
                 if (_currentPath.Count == 0) return;
@@ -279,12 +282,17 @@ namespace Emberwild.AI.Pathfinding
         {
             if (_currentPath == null || _currentPath.Count == 0) return;
 
+            float nodeDiameter = Mathf.Max(
+                0.01f, GridManager.Instance.NodeRadius * 2f);
+            Vector3 nodeSize = new Vector3(
+                nodeDiameter,
+                Mathf.Max(0.02f, nodeDiameter * 0.5f),
+                nodeDiameter);
+
             Gizmos.color = Color.black;
             for (int i = 0; i < _currentPath.Count; i++)
             {
-                Gizmos.DrawWireCube(
-                    _currentPath[i].worldPos,
-                    new Vector3(0.8f, 0.2f, 0.8f));
+                Gizmos.DrawWireCube(_currentPath[i].worldPos, nodeSize);
 
                 if (i < _currentPath.Count - 1)
                 {

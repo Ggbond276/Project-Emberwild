@@ -31,16 +31,21 @@
 GridManager.Instance.Init(
     origin:     Vector3.zero,           // 网格左下角(以场景地形的左下角为准)
     worldSize:  new Vector2(20, 20),    // 长宽,单位米
-    radius:     0.5f,                   // 单格半径,0.5 表示 1 米一格
+    radius:     0.1f,                   // 单格半径,0.1 表示 0.2 米一格
+    clearanceRadius: 0.4f,              // 角色避障半径,不要跟随单格半径缩小
     mask:       LayerMask.GetMask("Obstacle")
 );
 ```
 
-`TestRunner` 已经在 Inspector 暴露了这四个参数(`_gridOrigin / _gridWorldSize / _nodeRadius / _obstacleMask`),直接拖值就行,**不用改代码**。
+`TestRunner` 已经在 Inspector 暴露了这五个参数
+(`_gridOrigin / _gridWorldSize / _nodeRadius / _agentRadius / _obstacleMask`),
+直接拖值就行,**不用改代码**。
 
 参数建议:
 - `worldSize`:等于或略大于场景可走区域的 XZ 尺寸
-- `radius`:0.5 米够用,怪物越多调大(降低格子密度,A* 计算量减少)
+- `nodeRadius`:控制格子密度,`0.1` 表示 0.2 米一格
+- `agentRadius`:控制障碍物安全距离,通常按怪物碰撞体半径配置
+- 缩小 `nodeRadius` 不会自动缩小 `agentRadius`，两者职责不同
 
 ---
 
@@ -79,7 +84,7 @@ GridManager.Instance.Init(
 
 `CustomNavAgent` 拿到目标后:
 - 定时向 A* 引擎请求路径(默认 0.2 秒算一次)
-- 离下一个航点 0.5 米就提前切下一个点(避免过冲卡墙)
+- 离下一个航点足够近时提前切下一个点，最多提前一个节点直径
 - 距离目标 < 1.5 米自动 Stop
 
 ---
@@ -129,6 +134,8 @@ A: 写一个 `PatrolState` 协程,依次 `SetDestination(waypoint1)` → 等到�
 
 ## 调试小技巧
 
-- 选中场景里正在跑的怪物,Scene 视图会自动画一条**黑色折线**——这就是怪物脑内的规划路径。怪物卡墙时看这条线,一眼看出问题。
+- 选中场景里正在跑的怪物,Scene 视图会自动画一条**黑色折线**和小节点框。
+  节点框尺寸跟随 `NodeRadius`，折线表示怪物脑内的规划路径。怪物卡墙时看这条线,
+  一眼看出问题。
 - 选中带 `EnemyAI` 的实体,Scene 视图画**黄色线框球**——怪物视野范围。
 - `TestRunner` 的启动日志里有 `[2/4] 初始化环境系统(寻路网格)...` 这一行,Console 跟着看,网格生成失败会报错。

@@ -9,6 +9,7 @@ namespace Emberwild.AI.Pathfinding
     {
         #region 网格内部状态 (Grid State)
         private float _nodeDiameter;
+        private float _clearanceRadius;
         private int _gridSizeX;
         private int _gridSizeY;
         private LayerMask _obstacleMask;
@@ -18,25 +19,38 @@ namespace Emberwild.AI.Pathfinding
         public Node[,] Grid { get; private set; }
         public Vector2 GridWorldSize { get; private set; }
         public float NodeRadius { get; private set; }
+        public float ClearanceRadius => _clearanceRadius;
         public Vector3 GridOrigin { get; private set; }
         #endregion
 
         #region 网格初始化 (Grid Initialization)
         /// <summary>初始化寻路网格尺寸并生成节点。</summary>
-        public void Init(Vector3 origin, Vector2 worldSize, float radius, LayerMask mask)
+        public void Init(
+            Vector3 origin,
+            Vector2 worldSize,
+            float radius,
+            float clearanceRadius,
+            LayerMask mask)
         {
             GridOrigin = origin;
             GridWorldSize = worldSize;
-            NodeRadius = radius;
+            NodeRadius = Mathf.Max(0.01f, radius);
+            _clearanceRadius = Mathf.Max(0.01f, clearanceRadius);
             _obstacleMask = mask;
 
             _nodeDiameter = NodeRadius * 2;
-            _gridSizeX = Mathf.RoundToInt(GridWorldSize.x / _nodeDiameter);
-            _gridSizeY = Mathf.RoundToInt(GridWorldSize.y / _nodeDiameter);
+            _gridSizeX = Mathf.Max(
+                1, Mathf.RoundToInt(GridWorldSize.x / _nodeDiameter));
+            _gridSizeY = Mathf.Max(
+                1, Mathf.RoundToInt(GridWorldSize.y / _nodeDiameter));
 
             CreateGrid();
 
-            AppLog.Info("Pathfinding", $"网格扫描器初始化完成! 尺寸: {_gridSizeX}x{_gridSizeY}");
+            AppLog.Info(
+                "Pathfinding",
+                $"网格扫描器初始化完成! 尺寸: {_gridSizeX}x{_gridSizeY} "
+                + $"节点半径: {NodeRadius:0.###} "
+                + $"避障半径: {_clearanceRadius:0.###}");
         }
 
         /// <summary>按配置尺寸生成全部寻路节点。</summary>
@@ -54,7 +68,7 @@ namespace Emberwild.AI.Pathfinding
                         + Vector3.forward * (y * _nodeDiameter + NodeRadius);
                     bool walkable = !Physics.CheckSphere(
                         worldPoint,
-                        NodeRadius - 0.1f,
+                        _clearanceRadius,
                         _obstacleMask);
                     Grid[x, y] = new Node(walkable, worldPoint, x, y);
                 }
