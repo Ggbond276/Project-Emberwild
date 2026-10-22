@@ -327,6 +327,7 @@ MonoBehaviour:
   _gridOrigin: {x: 0, y: 0, z: 0}
   _gridWorldSize: {x: 200, y: 200}
   _nodeRadius: 0.1
+  _agentRadius: 0.4
   _obstacleMask:
     serializedVersion: 2
     m_Bits: 256
@@ -695,8 +696,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47607eac337964d4eb8345056dfcb070, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnMode: 1
-  spawnTid: 2002
+  spawnMode: 0
+  spawnTid: 2003
   randomTids: d2070000d1070000
   spawnInterval: 3
   maxEnemies: 2
